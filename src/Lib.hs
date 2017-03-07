@@ -23,24 +23,28 @@ main = do
       scaledImg = scale 0.5 origImg
 
   
-      finalImg = getImageAndPosition scaledImg 4 200
+      finalImg = getImageAndPosition scaledImg 4 200 (-45)
 
-      getImageAndPosition img num radius = mconcat $ map snd transList
-        where
-          imgL1 :: [(Int, Diagram B)]
-          imgL1 = zip (0:[1..]) $ take num (repeat img)
-
-          rotatedList :: [(Int, Diagram B)]
-          rotatedList = map (\(n,i) -> (n,rotateBy ((fromIntegral n)/(fromIntegral num)) i)) imgL1
-      
-          transList = 
-            map (\(n,i) -> (n, translateX (x n) (translateY (y n) i))) rotatedList
-              where 
-                x n = g sin n
-                y n = g cos n
-                g f n = radius*f ((((-2)*(fromIntegral n))/(fromIntegral num))*pi)
 
 
 
   renderRasterific "output.png" sizeSpec finalImg
 
+getImageAndPosition :: Diagram B -> Int -> Double -> Double -> Diagram B
+getImageAndPosition img num radius rotOffset = mconcat $ map snd transList
+  where
+    imgL1 :: [(Int, Diagram B)]
+    imgL1 = zip (0:[1..]) $ take num (repeat img)
+
+    rotatedList :: [(Int, Diagram B)]
+    rotatedList = map (\(n,i) -> (n,rotateBy ((fromIntegral n)/(fromIntegral num)) i)) imgL1
+
+    rotOffsetApplied :: [(Int, Diagram B)]
+    rotOffsetApplied = map (\(n,i) -> (n,rotate (rotOffset @@ deg) i)) rotatedList
+
+    transList = 
+      map (\(n,i) -> (n, translateX (x n) (translateY (y n) i))) rotOffsetApplied
+        where 
+          x n = g sin n
+          y n = g cos n
+          g f n = radius*f ((((-2)*(fromIntegral n))/(fromIntegral num))*pi)
