@@ -1,0 +1,46 @@
+name: frame-generator
+version: 0.0.0
+cabal-version: >=1.10
+build-type: Simple
+license: MIT
+license-file: LICENSE.md
+copyright: 2017 Divam Narula <dfordivam@gmail.com>
+maintainer: Divam Narula <dfordivam@gmail.com>
+synopsis: TODO
+description: TODO
+category: TODO
+author: Divam Narula <dfordivam@gmail.com>
+extra-source-files:
+  README.md
+
+source-repository head
+  type:     git
+  location: https://github.com/blueimpact/frame-generator
+
+library
+  hs-source-dirs:      src
+  exposed-modules:
+      Lib
+
+  other-modules:
+
+  build-depends:
+      base
+    , lens
+    , diagrams
+    , diagrams-lib
+    , diagrams-rasterific
+  default-language:    Haskell2010
+  ghc-options: -fno-warn-missing-signatures
+
+  if impl(ghcjs)
+    build-depends: ghcjs-base
+
+executable frame-generator
+  hs-source-dirs:      exe
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -fno-warn-missing-signatures
+  build-depends:
+      base
+    , frame-generator -any
+  default-language:    Haskell2010
