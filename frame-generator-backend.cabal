@@ -16,6 +16,7 @@ executable          frame-generator-backend
 
   build-depends:  base
                 , yesod-core
+                , yesod-form
                 , diagrams
                 , diagrams-lib
                 , diagrams-rasterific
