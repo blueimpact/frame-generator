@@ -7,10 +7,11 @@ extra-source-files: routes
 executable          frame-generator-backend
   main-is:          Main.hs
   other-modules:    Application
+                    AppData
                     Foundation
-
-                    Add
                     Home
+                    FrameCreator
+                    Frame
 
   ghc-options:      -Wall -fwarn-tabs -O2
 
@@ -18,7 +19,15 @@ executable          frame-generator-backend
                 , yesod-core
                 , yesod-form
                 , diagrams
+                , diagrams-core
                 , diagrams-lib
                 , diagrams-rasterific
+                , JuicyPixels
+                , bytestring
+                , path-pieces
+                , random
+                , text
+                , containers
+                , conduit
 
   ghc-options:    -threaded -O2 -rtsopts -with-rtsopts=-N

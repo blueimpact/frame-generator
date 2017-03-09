@@ -1,2 +1,4 @@
 /              HomeR GET POST
-/add/#Int/#Int AddR  GET
+
+/preview/#PatternID PreviewPatternR GET
+/getpng/#PngID PngR GET
