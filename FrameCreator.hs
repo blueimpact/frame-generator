@@ -77,23 +77,3 @@ getForeGround
           x n = g sin n
           y n = g cos n
           g f n = radius*f ((((-2)*(fromIntegral n))/(fromIntegral num))*pi)
-
-
--- createForeground :: MonadResource m =>
---      Source m ByteString
---   -> Source m ByteString
--- createForeground inpSrc =
---   mapMaybe bsToMaybeImage
---   --loadImageEmbBS :: Num n => ByteString -> Either String (DImage n Embedded)
---   let
---   -- renderDia :: Rasterific -> Options Rasterific V2 n -> QDiagram Rasterific V2
---   -- n m -> 'Image PixelRGBA8'
---     outputImg = renderDia Rasterific
---           (RasterificOptions (mkWidth outputSize))
---           (createDia origImg)
---
---
--- createDia :: Diagram B -> Diagram B
--- createDia origImg = finalImg
---   where
---     finalImg = origImg
