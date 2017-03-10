@@ -32,13 +32,9 @@ getPreviewPatternR patID = do
   case pd of
     Nothing -> redirect HomeR
     Just pat -> do
-      rnd <- liftIO $ randomRIO (minBound::Int,maxBound)
-
       let pngData = encodeToPng (origPatternData pat) 500
-          pngID = PngID rnd
 
-      liftIO $ modifyMVar_ (pngDB appSt)
-        (\db -> return $ Map.insert pngID pngData db)
+      pngID <- liftIO $ addToMVarMap (pngDB appSt) PngID pngData
 
       defaultLayout [whamlet|$newline never
         <p>
@@ -58,7 +54,7 @@ addToMVarMap mvar f v = do
       let
         -- tryInsert :: (Ord k) => IO (Map k v, k)
         tryInsert = do
-          rnd <- randomRIO (minBound::Int,maxBound)
+          rnd <- randomRIO (0,maxBound::Int)
           let i = f rnd
           case Map.lookup i db of
             Nothing -> return $
