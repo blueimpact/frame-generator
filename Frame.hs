@@ -10,6 +10,11 @@ import Control.Concurrent.MVar
 import qualified Data.Map as Map
 import Data.Map (Map)
 import System.Random
+import Text.Read (readMaybe)
+import qualified Data.Text as T
+import Data.Text (Text)
+import Control.Monad
+import Data.Maybe (fromMaybe)
 
 -- Spec
 -- Create foreground for pattern with default setup
@@ -68,9 +73,7 @@ getMakeForeGroundR patID = do
 
   db <- liftIO $ readMVar (patternDB appSt)
 
-  let pd = Map.lookup patID db
-
-  case pd of
+  case Map.lookup patID db of
     Nothing -> redirect HomeR
     Just pat -> do
       let
@@ -90,34 +93,70 @@ getMakeForeGroundR patID = do
       pngID <- liftIO $
         addToMVarMap (pngDB appSt) PngID pngData
 
+      fgID <- liftIO $ do
+        mvar <- newMVar
+          (ForeGround fg fgParams pngID)
+
+        addToMVarMap (foreGroundDB appSt) ForeGroundID
+          (ForeGroundData (origPatternData pat) mvar)
+
       defaultLayout [whamlet|$newline never
           <p>
           <img src=@{PngR pngID}>
+          <a href=@{EditForeGroundR fgID}>Edit Foreground
 |]
 
+getNewForeGroundParams :: ForeGroundParams -> Handler ForeGroundParams
+getNewForeGroundParams fgParams = do
+  patCount <- lookupGetParam "count"
+  rotOff <- lookupGetParam "rotation"
+  scale <- lookupGetParam "scaling"
+  radOff <- lookupGetParam "radoffset"
+
+  let
+    f :: (Read a) => a -> Maybe Text -> a
+    f a b = fromMaybe a
+        (join $ fmap (\t -> readMaybe $ T.unpack t) b)
+
+    newFgParams = ForeGroundParams
+      (f (patternCount   fgParams) patCount)
+      (radius         fgParams)
+      (f (rotationOffset fgParams) rotOff)
+      (f (scaling        fgParams) scale)
+      (f (radiusOffset   fgParams) radOff)
+      (template       fgParams)
+  return newFgParams
+
 getEditForeGroundR :: ForeGroundID -> Handler Html
-getEditForeGroundR fgID = undefined
---   appSt <- getYesod
---
---   db <- liftIO $ readMVar (patternDB appSt)
---
---   let pd = Map.lookup patID db
---
---   case pd of
---     Nothing -> redirect HomeR
---     Just pat -> do
---       rnd <- liftIO $ randomRIO (minBound::Int,maxBound)
---
---       let pngData = getPngForPD pat 500
---           pngID = PngID rnd
---
---       liftIO $ modifyMVar_ (pngDB appSt)
---         (\db -> return $ Map.insert pngID pngData db)
---
---       defaultLayout [whamlet|$newline never
---           <p>
---           <img src=@{PngR pngID}>
--- |]
+getEditForeGroundR fgID = do
+  appSt <- getYesod
+
+  db <- liftIO $ readMVar (foreGroundDB appSt)
+
+  case Map.lookup fgID db of
+    Nothing -> redirect HomeR
+    Just fgd -> do
+      fg <- liftIO $ takeMVar (foreGround fgd)
+
+      newParams <- getNewForeGroundParams (foreGroundParams fg)
+
+      let
+        newFgDia = getForeGround newParams (pattern fgd)
+
+        pngData = encodeToPng newFgDia 500
+
+      pngID <- liftIO $ do
+        addToMVarMap (pngDB appSt) PngID pngData
+
+      let newFg = ForeGround newFgDia newParams pngID
+
+      liftIO $ putMVar (foreGround fgd) newFg
+
+      defaultLayout [whamlet|$newline never
+          <p>
+          <img src=@{PngR pngID}>
+          <a href=@{EditForeGroundR fgID}>Edit Foreground
+|]
 
 getPngR :: PngID -> Handler TypedContent
 getPngR pngID = do
