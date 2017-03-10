@@ -54,23 +54,30 @@ getForeGround
   (ForeGroundParams num radius rotOffset scaling
     radiusOffset tmplt)
   img
-  = mconcat $ map snd transList
+  = mconcat $ map snd finalList
   where
+    finalList = transList
+
+    scaledImg = scale scaling img
+
     imgL1 :: [(Int, Diagram B)]
-    imgL1 = zip (0:[1..]) $ take num (repeat img)
+    imgL1 = zip (0:[1..]) $ take num (repeat scaledImg)
 
     rotatedList :: [(Int, Diagram B)]
-    rotatedList = map (\(n,i) -> (n,rotateBy ((fromIntegral n)/(fromIntegral num)) i)) imgL1
+    rotatedList = map (\(n,i) ->
+      (n,rotateBy ((fromIntegral n)/(fromIntegral num)) i)) imgL1
 
     rotOffsetApplied :: [(Int, Diagram B)]
     rotOffsetApplied = map (\(n,i) -> (n,rotate (rotOffset @@ deg) i)) rotatedList
 
+    -- Apply transformations
     transList =
       map (\(n,i) -> (n, translateX (x n) (translateY (y n) i))) rotOffsetApplied
         where
           x n = g sin n
           y n = g cos n
           g f n = radius*f ((((-2)*(fromIntegral n))/(fromIntegral num))*pi)
+
 
 -- createForeground :: MonadResource m =>
 --      Source m ByteString
