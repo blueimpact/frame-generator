@@ -18,10 +18,10 @@ import Diagrams.Backend.Rasterific
 import Codec.Picture.Png
 
 parseImageData ::
-     (ByteString, Int)
+     (ByteString, Int, ForeGroundTemplate)
   -> Maybe (PatternData)
-parseImageData (bsData, c) =
-  PatternData <$> pd <*> pure Horizontal
+parseImageData (bsData, c, t) =
+  PatternData <$> pd <*> pure t
     <*> (getDefaultRadius c <$> pd)
     <*> pure c
   where
@@ -56,6 +56,12 @@ getForeGround
   img
   = mconcat $ map snd finalList
   where
+    initRot =
+      case tmplt of
+        Horizontal -> 0
+        Vertical -> -90
+        Diagnol -> -45
+
     finalList = transList
 
     scaledImg = scale scaling img
@@ -68,7 +74,8 @@ getForeGround
       (n,rotateBy ((fromIntegral n)/(fromIntegral num)) i)) imgL1
 
     rotOffsetApplied :: [(Int, Diagram B)]
-    rotOffsetApplied = map (\(n,i) -> (n,rotate (rotOffset @@ deg) i)) rotatedList
+    rotOffsetApplied = map (\(n,i) ->
+      (n,rotate ((initRot + rotOffset) @@ deg) i)) rotatedList
 
     -- Apply transformations
     transList =

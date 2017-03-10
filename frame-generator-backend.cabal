@@ -12,6 +12,7 @@ executable          frame-generator-backend
                     Home
                     FrameCreator
                     Frame
+                    Utils
 
   ghc-options:      -Wall -fwarn-tabs -O2
 

@@ -5,11 +5,10 @@ module Frame where
 import Foundation
 import Yesod.Core
 import FrameCreator
+import Utils
 
 import Control.Concurrent.MVar
 import qualified Data.Map as Map
-import Data.Map (Map)
-import System.Random
 import Text.Read (readMaybe)
 import qualified Data.Text as T
 import Data.Text (Text)
@@ -41,27 +40,6 @@ getPreviewPatternR patID = do
         <img src=@{PngR pngID}>
         <a href=@{MakeForeGroundR patID}>Make Foreground
 |]
-
--- Add the value to a random key and returns the key
-addToMVarMap :: (Ord k) =>
-     MVar (Map k v)
-  -> (Int -> k)
-  -> v
-  -> IO k
-addToMVarMap mvar f v = do
-  modifyMVar mvar
-    (\db -> do
-      let
-        -- tryInsert :: (Ord k) => IO (Map k v, k)
-        tryInsert = do
-          rnd <- randomRIO (0,maxBound::Int)
-          let i = f rnd
-          case Map.lookup i db of
-            Nothing -> return $
-              (Map.insert i v db, i)
-            Just _ -> tryInsert
-
-      tryInsert)
 
 getMakeForeGroundR :: PatternID -> Handler Html
 getMakeForeGroundR patID = do

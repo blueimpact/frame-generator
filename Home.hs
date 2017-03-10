@@ -18,13 +18,21 @@ import Control.Monad (join)
 import Data.ByteString
 
 import FrameCreator
+import Utils
 
 -- Spec
 -- Upload the user given pattern and do error checking
 -- If pattern is ok then give a link to the pattern id
 -- Store the pattern in memory App
 
-form = renderDivs $ (,) <$> areq fileField "Pattern File" Nothing  <*> areq intField "Count" (Just 8)
+data FormData = FormData
+  FileInfo Int ForeGroundTemplate
+
+form = renderDivs $ FormData
+  <$> areq fileField "Pattern File" Nothing
+  <*> areq intField "Count" (Just 8)
+  <*> areq (radioField optionsEnum) "Template"
+        (Just Horizontal)
 
 getHomeR :: Handler Html
 getHomeR = do
@@ -33,8 +41,7 @@ getHomeR = do
       <form method=post enctype=#{enctype}>
         ^{widget}
         <p>
-        \ <img class="aligncenter" alt="beastie.png" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAM0AAADNCAMAAAAsYgRbAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABJQTFRF3NSmzMewPxIG//ncJEJsldTou1jHgAAAARBJREFUeNrs2EEKgCAQBVDLuv+V20dENbMY831wKz4Y/VHb/5RGQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0PzMWtyaGhoaGhoaGhoaGhoaGhoxtb0QGhoaGhoaGhoaGhoaGhoaMbRLEvv50VTQ9OTQ5OpyZ01GpM2g0bfmDQaL7S+ofFC6xv3ZpxJiywakzbvd9r3RWPS9I2+MWk0+kbf0Hih9Y17U0nTHibrDDQ0NDQ0NDQ0NDQ0NDQ0NTXbRSL/AK72o6GhoaGhoRlL8951vwsNDQ0NDQ1NDc0WyHtDTEhDQ0NDQ0NTS5MdGhoaGhoaGhoaGhoaGhoaGhoaGhoaGposzSHAAErMwwQ2HwRQAAAAAElFTkSuQmCC" scale="0">
-        <input type=submit>
+        <input type=submit>Submit
 |]
 
 postHomeR :: Handler Html
@@ -43,10 +50,13 @@ postHomeR = do
   $logDebug "Trying to read uploaded file"
 
   fd <- case result of
-        FormSuccess (f,c) -> do
-          d <- runConduit ((fileSource f) =$= (Data.Conduit.List.fold (<>) ""))
-          return ((Just (d,c)) :: Maybe (ByteString, Int))
-        _ -> return Nothing
+    FormSuccess (FormData f c t) -> do
+      -- Get all file data
+      d <- runConduit
+        ((fileSource f) =$= (Data.Conduit.List.fold (<>) ""))
+
+      return $ Just (d,c,t)
+    _ -> return Nothing
 
   let patData = join $ parseImageData <$> fd
 
@@ -59,28 +69,12 @@ postHomeR = do
       $logError $ "Could not parse file"
       redirect HomeR
       -- Set message and return to home
+
     Just pd -> do -- Store pd and go to preview
       $logInfo $ "Parse succesful"
 
       appSt <- getYesod
 
-      rnd <- liftIO $ randomRIO (minBound::Int,maxBound)
-
-      let patID = PatternID rnd
-
-      -- Potential blocking call
-      liftIO $ modifyMVar_ 
-        (patternDB appSt)
-        (\db -> return $ Map.insert patID pd db)
+      patID <- liftIO $ addToMVarMap (patternDB appSt) PatternID pd
 
       redirect $ PreviewPatternR patID
-
---
---  defaultLayout $ do
---      [whamlet|$newline never
---        $maybe file <- outputImage
---            <p>File received: #{fileName file}
---        $nothing
---          <p>Please try again;
---          <a href=@{Home}>Homepage 
--- |]

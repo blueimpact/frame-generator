@@ -16,6 +16,7 @@ data ForeGroundTemplate =
     Horizontal
   | Vertical
   | Diagnol
+  deriving (Show, Eq, Enum, Bounded)
 
 data PatternData = PatternData {
     origPatternData :: Diagram Rasterific
