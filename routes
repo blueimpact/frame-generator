@@ -1,4 +1,6 @@
 /              HomeR GET POST
 
 /preview/#PatternID PreviewPatternR GET
+/makeforeground/#PatternID MakeForeGroundR GET
+/editforeground/#ForeGroundID EditForeGroundR GET
 /getpng/#PngID PngR GET

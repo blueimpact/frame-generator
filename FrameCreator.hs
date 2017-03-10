@@ -8,7 +8,7 @@ module FrameCreator where
 
 import AppData
 
-import Data.ByteString
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy
 
 import Diagrams.TwoD.Image
@@ -17,10 +17,10 @@ import Diagrams.Prelude
 import Diagrams.Backend.Rasterific
 import Codec.Picture.Png
 
-parseImageData :: 
+parseImageData ::
      (ByteString, Int)
   -> Maybe (PatternData)
-parseImageData (bsData, c) = 
+parseImageData (bsData, c) =
   PatternData <$> pd <*> pure Horizontal
     <*> (getDefaultRadius c <$> pd)
     <*> pure c
@@ -29,12 +29,12 @@ parseImageData (bsData, c) =
           (Left _) -> Nothing
           (Right dimg) -> Just $ image dimg
 
-getPngForPD :: PatternData -> Int -> ByteString
-getPngForPD pd width = Data.ByteString.Lazy.toStrict $
+encodeToPng :: Diagram Rasterific -> Int -> ByteString
+encodeToPng dia width = Data.ByteString.Lazy.toStrict $
   encodePng $ renderDia Rasterific
           (RasterificOptions (mkWidth w))
-          (origPatternData pd)
-  where 
+          (dia)
+  where
     w :: Double
     w = fromIntegral width
 
@@ -45,21 +45,47 @@ getDefaultRadius num' img = (h/2) + (w/2)/(tan (alpha/2))
     h = height img
     num = fromIntegral num'
     alpha = (2*pi)/num
-                                  
--- createForeground :: MonadResource m => 
+
+getForeGround ::
+     ForeGroundParams
+  -> Diagram Rasterific
+  -> Diagram Rasterific
+getForeGround
+  (ForeGroundParams num radius rotOffset scaling
+    radiusOffset tmplt)
+  img
+  = mconcat $ map snd transList
+  where
+    imgL1 :: [(Int, Diagram B)]
+    imgL1 = zip (0:[1..]) $ take num (repeat img)
+
+    rotatedList :: [(Int, Diagram B)]
+    rotatedList = map (\(n,i) -> (n,rotateBy ((fromIntegral n)/(fromIntegral num)) i)) imgL1
+
+    rotOffsetApplied :: [(Int, Diagram B)]
+    rotOffsetApplied = map (\(n,i) -> (n,rotate (rotOffset @@ deg) i)) rotatedList
+
+    transList =
+      map (\(n,i) -> (n, translateX (x n) (translateY (y n) i))) rotOffsetApplied
+        where
+          x n = g sin n
+          y n = g cos n
+          g f n = radius*f ((((-2)*(fromIntegral n))/(fromIntegral num))*pi)
+
+-- createForeground :: MonadResource m =>
 --      Source m ByteString
 --   -> Source m ByteString
 -- createForeground inpSrc =
 --   mapMaybe bsToMaybeImage
 --   --loadImageEmbBS :: Num n => ByteString -> Either String (DImage n Embedded)
---   let 
+--   let
 --   -- renderDia :: Rasterific -> Options Rasterific V2 n -> QDiagram Rasterific V2
 --   -- n m -> 'Image PixelRGBA8'
 --     outputImg = renderDia Rasterific
 --           (RasterificOptions (mkWidth outputSize))
 --           (createDia origImg)
---   
--- 
+--
+--
 -- createDia :: Diagram B -> Diagram B
 -- createDia origImg = finalImg
 --   where
