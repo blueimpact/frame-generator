@@ -62,8 +62,9 @@ getMask ::
      Diagram Rasterific
   -> Int
   -> Int
-  -> (ByteString, ByteString)
-getMask dia width dilValue = (enc dilatedJpData, enc ffJpData)
+  -> (ByteString, ByteString, ByteString)
+getMask dia width dilValue =
+  (enc dilatedJpData, enc ffJpData, enc subtractedJpData)
 
   where
     enc i = Data.ByteString.Lazy.toStrict $ encodePng i
@@ -88,8 +89,6 @@ getMask dia width dilValue = (enc dilatedJpData, enc ffJpData)
 
     dilatedJpData = toJuicyGrey dilatedImage
 
-    -- floodFill :: (PrimMonad m, MutableImage i, Eq (ImagePixel (Freezed i))) => Point -> ImagePixel (Freezed i) -> i (PrimState m) -> m ()
-
     ffImg :: Grey
     ffImg = create (doFloodFill dilatedImage (GreyPixel 255))
       where
@@ -99,8 +98,11 @@ getMask dia width dilValue = (enc dilatedJpData, enc ffJpData)
             pxl dilImg
           return dilImg
 
-
     ffJpData = toJuicyGrey ffImg
+
+    subtractedJpData = JP.zipPixelComponent3 subtract
+                        ffJpData dilatedJpData dilatedJpData
+      where subtract v1 v2 _ = max 0 (v1 - v2)
 
     w :: Double
     w = fromIntegral width

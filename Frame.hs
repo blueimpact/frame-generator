@@ -151,18 +151,22 @@ getForeGroundMaskR fgID = do
             (join $ fmap (\t -> readMaybe $ T.unpack t) dilParam)
 
 
-          (dil,mask) = getMask (foreGroundDia fg) 800 val
+          (dil,ff,subt) = getMask (foreGroundDia fg) 800 val
 
       pngID <- liftIO $ do
-        addToMVarMap (pngDB appSt) PngID mask
+        addToMVarMap (pngDB appSt) PngID dil
 
       pngID2 <- liftIO $ do
-        addToMVarMap (pngDB appSt) PngID dil
+        addToMVarMap (pngDB appSt) PngID ff
+
+      pngID3 <- liftIO $ do
+        addToMVarMap (pngDB appSt) PngID subt
 
       defaultLayout [whamlet|$newline never
           <p>
           <img src=@{PngR pngID}>
           <img src=@{PngR pngID2}>
+          <img src=@{PngR pngID3}>
           <a href=@{EditForeGroundR fgID}>Edit Foreground
 |]
 
