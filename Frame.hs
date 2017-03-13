@@ -9,11 +9,6 @@ import Utils
 
 import Control.Concurrent.MVar
 import qualified Data.Map as Map
-import Text.Read (readMaybe)
-import qualified Data.Text as T
-import Data.Text (Text)
-import Control.Monad
-import Data.Maybe (fromMaybe)
 
 -- Spec
 -- Create foreground for pattern with default setup
@@ -89,16 +84,12 @@ getNewForeGroundParams fgParams = do
   radOff <- lookupGetParam "radoffset"
 
   let
-    f :: (Read a) => a -> Maybe Text -> a
-    f a b = fromMaybe a
-        (join $ fmap (\t -> readMaybe $ T.unpack t) b)
-
     newFgParams = ForeGroundParams
-      (f (patternCount   fgParams) patCount)
+      (getParamFromMaybe (patternCount   fgParams) patCount)
       (radius         fgParams)
-      (f (rotationOffset fgParams) rotOff)
-      (f (scaling        fgParams) scale)
-      (f (radiusOffset   fgParams) radOff)
+      (getParamFromMaybe (rotationOffset fgParams) rotOff)
+      (getParamFromMaybe (scaling        fgParams) scale)
+      (getParamFromMaybe (radiusOffset   fgParams) radOff)
       (template       fgParams)
   return newFgParams
 
@@ -146,12 +137,14 @@ getForeGroundMaskR fgID = do
       fg <- liftIO $ readMVar (foreGround fgd)
 
       dilParam <- lookupGetParam "dilate"
-      let val :: Int
-          val = fromMaybe 0
-            (join $ fmap (\t -> readMaybe $ T.unpack t) dilParam)
+      blurParam <- lookupGetParam "blur"
+      let dilVal :: Int
+          dilVal = getParamFromMaybe 0 dilParam
 
+          blurVal :: Int
+          blurVal = getParamFromMaybe 0 blurParam
 
-          (dil,ff,subt) = getMask (foreGroundDia fg) 800 val
+          (dil,ff,subt) = getMask (foreGroundDia fg) 800 dilVal blurVal
 
       pngID <- liftIO $ do
         addToMVarMap (pngDB appSt) PngID dil

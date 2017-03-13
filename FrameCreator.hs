@@ -19,7 +19,7 @@ import Diagrams.Backend.Rasterific
 import Codec.Picture.Png
 import qualified Codec.Picture.Types as JP
 import Vision.Image.JuicyPixels
-import Vision.Image.Filter (dilate)
+import Vision.Image.Filter (dilate, blur)
 import Vision.Image.Conversion
 import Vision.Image.Grey
 import Vision.Image.Mutable
@@ -62,8 +62,9 @@ getMask ::
      Diagram Rasterific
   -> Int
   -> Int
+  -> Int
   -> (ByteString, ByteString, ByteString)
-getMask dia width dilValue =
+getMask dia width dilValue blurVal =
   (enc dilatedJpData, enc ffJpData, enc subtractedJpData)
 
   where
@@ -84,8 +85,11 @@ getMask dia width dilValue =
     greyImg :: Grey
     greyImg = toFridayGrey jpGrey
 
-    dilatedImage :: Manifest GreyPixel
-    dilatedImage = dilate dilValue greyImg
+    blurredImg :: Grey
+    blurredImg = blur blurVal greyImg
+
+    dilatedImage :: Grey
+    dilatedImage = dilate dilValue blurredImg
 
     dilatedJpData = toJuicyGrey dilatedImage
 
@@ -106,7 +110,6 @@ getMask dia width dilValue =
 
     w :: Double
     w = fromIntegral width
-
 
 getForeGround ::
      ForeGroundParams

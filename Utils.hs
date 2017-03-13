@@ -4,6 +4,11 @@ import System.Random
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Control.Concurrent.MVar
+import Control.Monad
+import Text.Read (readMaybe)
+import qualified Data.Text as T
+import Data.Text (Text)
+import Data.Maybe (fromMaybe)
 
 -- Add the value to a random key and returns the key
 addToMVarMap :: (Ord k) =>
@@ -25,4 +30,8 @@ addToMVarMap mvar f v = do
             Just _ -> tryInsert
 
       tryInsert)
+
+getParamFromMaybe :: (Read a) => a -> Maybe Text -> a
+getParamFromMaybe a b = fromMaybe a
+  (join $ fmap (\t -> readMaybe $ T.unpack t) b)
 
