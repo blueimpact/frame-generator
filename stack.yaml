@@ -41,7 +41,10 @@ packages:
 - '../../../diagram/diagrams-rasterific'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps: []
+extra-deps:
+- friday-0.2.3.1
+- friday-juicypixels-0.1.2
+- ratio-int-0.1.2
 
 # Override default flag values for local packages and extra-deps
 flags: {}

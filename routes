@@ -3,4 +3,5 @@
 /preview/#PatternID PreviewPatternR GET
 /makeforeground/#PatternID MakeForeGroundR GET
 /editforeground/#ForeGroundID EditForeGroundR GET
+/foregroundmask/#ForeGroundID ForeGroundMaskR GET
 /getpng/#PngID PngR GET

@@ -30,5 +30,7 @@ executable          frame-generator-backend
                 , text
                 , containers
                 , conduit
+                , friday
+                , friday-juicypixels
 
   ghc-options:    -threaded -O2 -rtsopts -with-rtsopts=-N

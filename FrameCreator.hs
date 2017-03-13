@@ -2,6 +2,7 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE AllowAmbiguousTypes       #-}
 
 -- Algo for doing image creation/manipulation
 module FrameCreator where
@@ -16,6 +17,17 @@ import Diagrams.TwoD.Size
 import Diagrams.Prelude
 import Diagrams.Backend.Rasterific
 import Codec.Picture.Png
+import qualified Codec.Picture.Types as JP
+import Vision.Image.JuicyPixels
+import Vision.Image.Filter (dilate)
+import Vision.Image.Conversion
+import Vision.Image.Grey
+import Vision.Image.Mutable
+import Vision.Image.Type
+import qualified Vision.Image.Class as V
+import Vision.Primitive.Shape (ix2)
+import Vision.Image.Transform
+import Control.Monad.ST.Safe
 
 parseImageData ::
      (ByteString, Int, ForeGroundTemplate)
@@ -45,6 +57,54 @@ getDefaultRadius num' img = (h/2) + (w/2)/(tan (alpha/2))
     h = height img
     num = fromIntegral num'
     alpha = (2*pi)/num
+
+getMask ::
+     Diagram Rasterific
+  -> Int
+  -> Int
+  -> (ByteString, ByteString)
+getMask dia width dilValue = (enc dilatedJpData, enc ffJpData)
+
+  where
+    enc i = Data.ByteString.Lazy.toStrict $ encodePng i
+
+    jpData :: JP.Image JP.PixelRGB8
+    jpData = JP.pixelMap modTransparent $ renderDia Rasterific
+              (RasterificOptions (mkWidth w))
+              (dia)
+
+    -- Turn non-transparent pixel to black
+    modTransparent (JP.PixelRGBA8 0 0 0 a) = JP.PixelRGB8 a a a
+    modTransparent p = JP.dropTransparency p
+
+    -- :: JP.Image PixelRGB8 -> RGB
+    jpGrey = JP.extractLumaPlane jpData
+
+    greyImg :: Grey
+    greyImg = toFridayGrey jpGrey
+
+    dilatedImage :: Manifest GreyPixel
+    dilatedImage = dilate dilValue greyImg
+
+    dilatedJpData = toJuicyGrey dilatedImage
+
+    -- floodFill :: (PrimMonad m, MutableImage i, Eq (ImagePixel (Freezed i))) => Point -> ImagePixel (Freezed i) -> i (PrimState m) -> m ()
+
+    ffImg :: Grey
+    ffImg = create (doFloodFill dilatedImage (GreyPixel 255))
+      where
+        doFloodFill inpImg pxl = do
+          dilImg <- thaw inpImg :: ST s (MutableManifest GreyPixel s)
+          floodFill (ix2 (ceiling (w/2)) (ceiling (w/2)))
+            pxl dilImg
+          return dilImg
+
+
+    ffJpData = toJuicyGrey ffImg
+
+    w :: Double
+    w = fromIntegral width
+
 
 getForeGround ::
      ForeGroundParams

@@ -78,6 +78,7 @@ getMakeForeGroundR patID = do
           <p>
           <img src=@{PngR pngID}>
           <a href=@{EditForeGroundR fgID}>Edit Foreground
+          <a href=@{ForeGroundMaskR fgID}>Foreground Mask
 |]
 
 getNewForeGroundParams :: ForeGroundParams -> Handler ForeGroundParams
@@ -129,6 +130,39 @@ getEditForeGroundR fgID = do
       defaultLayout [whamlet|$newline never
           <p>
           <img src=@{PngR pngID}>
+          <a href=@{EditForeGroundR fgID}>Edit Foreground
+          <a href=@{ForeGroundMaskR fgID}>Foreground Mask
+|]
+
+getForeGroundMaskR :: ForeGroundID -> Handler Html
+getForeGroundMaskR fgID = do
+  appSt <- getYesod
+
+  db <- liftIO $ readMVar (foreGroundDB appSt)
+
+  case Map.lookup fgID db of
+    Nothing -> redirect HomeR
+    Just fgd -> do
+      fg <- liftIO $ readMVar (foreGround fgd)
+
+      dilParam <- lookupGetParam "dilate"
+      let val :: Int
+          val = fromMaybe 0
+            (join $ fmap (\t -> readMaybe $ T.unpack t) dilParam)
+
+
+          (dil,mask) = getMask (foreGroundDia fg) 800 val
+
+      pngID <- liftIO $ do
+        addToMVarMap (pngDB appSt) PngID mask
+
+      pngID2 <- liftIO $ do
+        addToMVarMap (pngDB appSt) PngID dil
+
+      defaultLayout [whamlet|$newline never
+          <p>
+          <img src=@{PngR pngID}>
+          <img src=@{PngR pngID2}>
           <a href=@{EditForeGroundR fgID}>Edit Foreground
 |]
 
