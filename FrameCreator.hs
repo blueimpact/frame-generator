@@ -13,8 +13,8 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy
 
 import Diagrams.TwoD.Image
-import Diagrams.TwoD.Size
-import Diagrams.Prelude
+import qualified Diagrams.TwoD.Size as Dia
+import Diagrams.Prelude hiding (render)
 import Diagrams.Backend.Rasterific
 import Codec.Picture.Png
 import qualified Codec.Picture.Types as JP
@@ -29,10 +29,10 @@ import Vision.Primitive.Shape (ix2)
 import Vision.Image.Transform
 import Control.Monad.ST.Safe
 
-parseImageData ::
+parsePatternData ::
      (ByteString, Int, ForeGroundTemplate)
   -> Maybe (PatternData)
-parseImageData (bsData, c, t) =
+parsePatternData (bsData, c, t) =
   PatternData <$> pd <*> pure t
     <*> (getDefaultRadius c <$> pd)
     <*> pure c
@@ -41,14 +41,18 @@ parseImageData (bsData, c, t) =
           (Left _) -> Nothing
           (Right dimg) -> Just $ image dimg
 
+parseBackgroundImageData ::
+     ByteString
+  -> Maybe (BackgroundImage)
+parseBackgroundImageData bsData = BackgroundImage <$> pd
+  where
+    pd = case loadImageEmbBS bsData of
+          (Left _) -> Nothing
+          (Right dimg) -> Just $ image dimg
+
 encodeToPng :: Diagram Rasterific -> Int -> ByteString
 encodeToPng dia width = Data.ByteString.Lazy.toStrict $
-  encodePng $ renderDia Rasterific
-          (RasterificOptions (mkWidth w))
-          (dia)
-  where
-    w :: Double
-    w = fromIntegral width
+  encodePng $ render dia width
 
 getDefaultRadius :: Int -> Diagram B -> Double
 getDefaultRadius num' img = (h/2) + (w/2)/(tan (alpha/2))
@@ -61,19 +65,19 @@ getDefaultRadius num' img = (h/2) + (w/2)/(tan (alpha/2))
 getMask ::
      Diagram Rasterific
   -> Int
-  -> Int
-  -> Int
-  -> (ByteString, ByteString, ByteString)
-getMask dia width dilValue blurVal =
-  (enc dilatedJpData, enc ffJpData, enc subtractedJpData)
+  -> MaskParams
+  -> (ByteString, ByteString, ByteString, JP.Image JP.Pixel8)
+getMask dia width (MaskParams dilValue blurVal) =
+  (enc dilatedJpData
+  , enc ffJpData
+  , enc subtractedJpData
+  , subtractedJpData)
 
   where
     enc i = Data.ByteString.Lazy.toStrict $ encodePng i
 
     jpData :: JP.Image JP.PixelRGB8
-    jpData = JP.pixelMap modTransparent $ renderDia Rasterific
-              (RasterificOptions (mkWidth w))
-              (dia)
+    jpData = JP.pixelMap modTransparent (render dia width)
 
     -- Turn non-transparent pixel to black
     modTransparent (JP.PixelRGBA8 0 0 0 a) = JP.PixelRGB8 a a a
@@ -149,3 +153,60 @@ getForeGround
           x n = g sin n
           y n = g cos n
           g f n = radius*f ((((-2)*(fromIntegral n))/(fromIntegral num))*pi)
+
+render ::
+     Diagram Rasterific
+  -> Int
+  -> JP.Image JP.PixelRGBA8
+render dia width = renderDia Rasterific
+          (RasterificOptions (mkWidth w))
+          (dia)
+  where
+    w :: Double
+    w = fromIntegral width
+
+
+renderSquareImage :: Diagram Rasterific -> Int -> JP.Image JP.PixelRGBA8
+renderSquareImage diaImg width = squareImage
+
+  where
+    dw = (Dia.width diaImg)
+    dh = (Dia.height diaImg)
+
+    w :: Double
+    w = fromIntegral width
+    sspec = if dw < dh then mkWidth w else mkHeight w
+    img = renderDia Rasterific (RasterificOptions sspec) diaImg
+
+    -- squareImage :: JP.Pixel a => JP.Image a
+    squareImage = JP.generateImage
+      (\x y -> JP.pixelAt img x y) edge edge
+    edge = min (JP.imageWidth img) (JP.imageHeight img)
+
+
+createFrame ::
+     BackgroundImage
+  -> ForeGround
+  -> Mask
+  -> Int
+  -> ByteString
+
+createFrame img fg mask width =
+  Data.ByteString.Lazy.toStrict $ encodePng maskedImgJpData
+  where
+    -- Create the raster of all three of same size
+    -- Make the mask portion invisible for image
+    -- Add the frame on top of this
+
+    imgJP = renderSquareImage (origBackgroundImage img) width
+    fgJP = render (foreGroundDia fg) width
+
+    maskJP = JP.pixelMap JP.promotePixel $ maskData mask
+
+    maskedImgJpData =
+      JP.zipPixelComponent3 doMasking
+        imgJP fgJP maskJP
+
+    doMasking i f m =
+      if m > 0 then i else f
+
