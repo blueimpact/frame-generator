@@ -77,11 +77,17 @@ getMask dia width (MaskParams dilValue blurVal) =
     enc i = Data.ByteString.Lazy.toStrict $ encodePng i
 
     jpData :: JP.Image JP.PixelRGB8
-    jpData = JP.pixelMap modTransparent (render dia width)
+    jpData = JP.pixelMap invertTransparent (render dia width)
 
-    -- Turn non-transparent pixel to black
-    modTransparent (JP.PixelRGBA8 0 0 0 a) = JP.PixelRGB8 a a a
-    modTransparent p = JP.dropTransparency p
+    -- An alpha value of zero represents full transparency,
+    -- and a value of (2^bitdepth)-1 represents a 
+    -- fully opaque pixel
+
+    -- Invert - Opaque -> White
+    invertTransparent (JP.PixelRGBA8 0 0 0 a) = JP.PixelRGB8 a a a
+    -- Transparent -> Black
+    invertTransparent (JP.PixelRGBA8 0 0 0 0) = JP.PixelRGB8 0 0 0
+    invertTransparent p = JP.dropTransparency p
 
     -- :: JP.Image PixelRGB8 -> RGB
     jpGrey = JP.extractLumaPlane jpData
@@ -201,7 +207,13 @@ createFrame img fg mask width =
     imgJP = renderSquareImage (origBackgroundImage img) width
     fgJP = render (foreGroundDia fg) width
 
-    maskJP = JP.pixelMap JP.promotePixel $ maskData mask
+    maskJP = JP.pixelMap modMask $ maskData mask
+
+    modMask :: JP.Pixel8 -> JP.PixelRGBA8
+    -- Black portion, outside
+    modMask 0 = JP.PixelRGBA8 0 0 0 0
+    -- White portion, inside
+    modMask _ = JP.PixelRGBA8 1 1 1 1
 
     maskedImgJpData =
       JP.zipPixelComponent3 doMasking
