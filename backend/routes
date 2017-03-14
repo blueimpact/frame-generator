@@ -1,0 +1,20 @@
+/              HomeR GET
+
+/pattern/list                   PatternsListR GET
+/pattern/upload                 UploadPatternR GET POST
+/pattern/id/#PatternID          PreviewPatternR GET
+
+/image/list                     BackgroundImageListR GET
+/image/upload                   UploadBackgroundImageR GET POST
+/image/id/#BackgroundImageID    PreviewBackgroundImageR GET
+
+/create/foreground/#PatternID   MakeForeGroundR GET
+/edit/foreground/#ForeGroundID  EditForeGroundR GET
+
+/create/mask/#ForeGroundID      CreateMaskR GET
+/edit/mask/#ForeGroundID        EditMaskR GET POST
+
+/create/frame/#ForeGroundID/#BackgroundImageID CreateFrameR GET
+
+-- Host all output images on this route
+/getpng/#PngID                  PngR GET
