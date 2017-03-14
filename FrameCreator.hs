@@ -70,8 +70,8 @@ getMask ::
 getMask dia width (MaskParams dilValue blurVal) =
   (enc dilatedJpData
   , enc ffJpData
-  , enc subtractedJpData
-  , subtractedJpData)
+  , enc blurredFinalMask
+  , blurredFinalMask)
 
   where
     enc i = Data.ByteString.Lazy.toStrict $ encodePng i
@@ -117,6 +117,9 @@ getMask dia width (MaskParams dilValue blurVal) =
     subtractedJpData = JP.zipPixelComponent3 subtract
                         ffJpData dilatedJpData dilatedJpData
       where subtract v1 v2 _ = max 0 (v1 - v2)
+
+    blurredFinalMask = toJuicyGrey $
+      blur 4 (toFridayGrey subtractedJpData)
 
     w :: Double
     w = fromIntegral width
@@ -213,12 +216,16 @@ createFrame img fg mask width =
     -- Black portion, outside
     modMask 0 = JP.PixelRGBA8 0 0 0 0
     -- White portion, inside
-    modMask _ = JP.PixelRGBA8 1 1 1 1
+    modMask a = JP.PixelRGBA8 a a a a
 
     maskedImgJpData =
       JP.zipPixelComponent3 doMasking
         imgJP fgJP maskJP
 
     doMasking i f m =
-      if m > 0 then i else f
+      if m > 0
+        -- Blur orig Image at the border
+        then ceiling $
+          ((fromIntegral i)* (fromIntegral m))/255
+        else f
 
