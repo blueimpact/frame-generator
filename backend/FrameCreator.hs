@@ -34,7 +34,7 @@ parsePatternData ::
   -> Maybe (PatternData)
 parsePatternData (bsData, c, t) =
   PatternData <$> pd <*> pure t
-    <*> (getDefaultRadius c <$> pd)
+    <*> (getDefaultRadius c t <$> pd)
     <*> pure c
   where
     pd = case loadImageEmbBS bsData of
@@ -54,13 +54,22 @@ encodeToPng :: Diagram Rasterific -> Int -> ByteString
 encodeToPng dia width = Data.ByteString.Lazy.toStrict $
   encodePng $ render dia width
 
-getDefaultRadius :: Int -> Diagram B -> Double
-getDefaultRadius num' img = (h/2) + (w/2)/(tan (alpha/2))
+-- Depend on the template
+getDefaultRadius :: Int -> ForeGroundTemplate -> Diagram B -> Double
+getDefaultRadius num' t img =
+  case t of
+    Horizontal -> horiz
+    Vertical -> vert
+    Diagnol -> diag
   where
+    horiz = (h/2) + (w/2)/(tan (alpha/2))
+    vert = (w/2) + (h/2)/(tan (alpha/2))
+    diag = (w/root2) *(1/(sin (alpha/2))) -- Assuming w == h
     w = width img
     h = height img
     num = fromIntegral num'
     alpha = (2*pi)/num
+    root2 = sqrt (2.0)
 
 getMask ::
      Diagram Rasterific
