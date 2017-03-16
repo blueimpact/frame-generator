@@ -10,5 +10,6 @@ import Yesod.Core
 
 import Home
 import Frame
+import EditFrame
 
 mkYesodDispatch "App" resourcesApp

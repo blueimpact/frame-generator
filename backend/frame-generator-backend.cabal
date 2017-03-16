@@ -13,12 +13,15 @@ executable          frame-generator-backend
                     FrameCreator
                     Frame
                     Utils
+                    EditFrame
 
   ghc-options:      -Wall -fwarn-tabs -O2
 
   build-depends:  base
+                , frame-generator-common
                 , yesod-core
                 , yesod-form
+                , yesod-websockets
                 , diagrams
                 , diagrams-core
                 , diagrams-lib

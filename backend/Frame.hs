@@ -16,9 +16,6 @@ import Control.Monad
 --getForeGroundR :: PatternId -> Handler Html
 --getForeGroundR pId = do
 
-previewSize :: Int
-previewSize = 1200
-
 getPreviewPatternR :: PatternID -> Handler Html
 getPreviewPatternR patID = do
   appSt <- getYesod
@@ -110,55 +107,6 @@ getMakeForeGroundR patID = do
           <img src=@{PngR pngID}>
           <a href=@{EditForeGroundR fgID}>Edit Foreground
           <a href=@{CreateMaskR fgID}>Foreground Mask
-|]
-
-getNewForeGroundParams :: ForeGroundParams -> Handler ForeGroundParams
-getNewForeGroundParams fgParams = do
-  patCount <- lookupGetParam "count"
-  rotOff <- lookupGetParam "rotation"
-  scale <- lookupGetParam "scaling"
-  radOff <- lookupGetParam "radoffset"
-
-  let
-    newFgParams = ForeGroundParams
-      (getParamFromMaybe (patternCount   fgParams) patCount)
-      (radius         fgParams)
-      (getParamFromMaybe (rotationOffset fgParams) rotOff)
-      (getParamFromMaybe (scaling        fgParams) scale)
-      (getParamFromMaybe (radiusOffset   fgParams) radOff)
-      (template       fgParams)
-  return newFgParams
-
-getEditForeGroundR :: ForeGroundID -> Handler Html
-getEditForeGroundR fgID = do
-  appSt <- getYesod
-
-  db <- liftIO $ readMVar (foreGroundDB appSt)
-
-  case Map.lookup fgID db of
-    Nothing -> redirect HomeR
-    Just fgd -> do
-      fg <- liftIO $ takeMVar (foreGround fgd)
-
-      newParams <- getNewForeGroundParams (foreGroundParams fg)
-
-      let
-        newFgDia = getForeGround newParams (pattern fgd)
-
-        pngData = encodeToPng newFgDia previewSize
-
-      pngID <- liftIO $ do
-        addToMVarMap (pngDB appSt) PngID pngData
-
-      let newFg = ForeGround newFgDia newParams pngID
-
-      liftIO $ putMVar (foreGround fgd) newFg
-
-      defaultLayout [whamlet|$newline never
-          <p>
-          <img src=@{PngR pngID}>
-          <a href=@{EditForeGroundR fgID}>Edit Foreground
-          <a href=@{CreateMaskR fgID}>Create Mask
 |]
 
 -- Create a basic default mask

@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 
 module Lib where
 
@@ -11,10 +12,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding as E
 import Data.FileEmbed
+import Data.Monoid
 
 import Reflex
 import Reflex.Dom
 import Control.Monad.IO.Class
+import Data.Map (Map)
+import qualified Data.Map as Map
 -- import qualified Data.ByteString.Base64.URL
 
 import Data.ByteString (ByteString)
@@ -47,23 +51,51 @@ createObjectURL bs = do
 main = mainWidgetWithCss  $(embedFile "src/style.css") editForegroundWidget
 
 editForegroundWidget ::
-  (MonadWidget t m) => m ()
+  (MonadWidget t m
+  , PerformEvent t m) => m ()
 editForegroundWidget = do
-  -- rec t <- textInput $ def & setValue .~ fmap (const "") newMessage
-  --     b <- button "Send"
-  --     let newMessage = fmap ((:[]) . encodeUtf8) $ tag (current $ value t) $ leftmost [b, keypress Enter t]
-  el "div" $ text "Hello"
-  -- ws <- webSocket "ws://localhost:3000/edit/foreground/9034544564612548176" $ def -- & webSocketConfig_send .~ newMessage
+  el "div" $ text "Enter the Image ID"
 
-  let someBS = "hello"
+  rec t <- textInput $ def & setValue .~ fmap (const "") newMessage
+      b <- button "Send"
+      let newMessage = tag (current $ value t) $ leftmost [b, keypress Enter t]
+
+          evMap = ffor newMessage (\t -> Map.singleton (0 ::Int) (Just t))
+
+  listHoldWithKey Map.empty evMap createEditWidget
+  return ()
+
+createEditWidget _ idTxt = do
+
+  rec t <- textInput $ def & setValue .~ fmap (const "") newMessage
+      b <- button "Send"
+      let newMessage = fmap (:[]) $ tag (current $ value t) $ leftmost [b, keypress Enter t]
+
+  ws <- webSocket ("ws://localhost:3000/edit/foreground/" <> idTxt) $ def & webSocketConfig_send .~ newMessage
+
+  let someBS = "hello from Edit Widget"
+
   imgEv <- liftIO $ createObjectURL someBS
 
   el "div" $ text imgEv
 
+  let
+    myImgUrl =
+      ffor (_webSocket_recv ws)
+        (\bs -> liftIO $ createObjectURL bs)
+
+  urlEv <- performEvent myImgUrl
+  urlDyn <- holdDyn "" urlEv
+  let dynAttr = ffor urlDyn (\u -> ("src" =: u))
+  elDynAttr "img" dynAttr $ return ()
 
   -- receivedMessages <- foldDyn (\m ms -> ms ++ [m]) [] $ _webSocket_recv ws
   -- el "p" $ text "Responses from the yesod server:"
-  -- let fun bs = E.decodeUtf8 (Data.ByteString.Base64.URL.encode bs)
-  --     dynAttr m =  ffor m (\bs -> ("src" =: (fun bs))
-  -- _ <- el "ul" $ simpleList receivedMessages $ \m -> elDynAttr "src"  $ return ()
+  -- let
+  --     -- dynAttr m =  ffor m (\bs -> (liftIO $ createObjectURL bs) >>= (\x -> ("src" =: x)))
+  -- _ <- el "ul" $ simpleList receivedMessages $ \m -> do
+  --           url <- forDynM m (\bs -> liftIO $ createObjectURL bs)
+  --           performEvent
+  --           let dynAttr = ffor url (\u -> ("src" =: u))
+  --           elDynAttr "img" dynAttr $ return ()
   return ()
