@@ -67,17 +67,14 @@ editForegroundWidget = do
 
 createEditWidget _ idTxt = do
 
+  el "div" $ text "Editing ForeGroundID: " <> idTxt
+
   rec t <- textInput $ def & setValue .~ fmap (const "") newMessage
-      b <- button "Send"
+      b <- button "Send Command"
       let newMessage = fmap (:[]) $ tag (current $ value t) $ leftmost [b, keypress Enter t]
 
   ws <- webSocket ("ws://localhost:3000/edit/foreground/" <> idTxt) $ def & webSocketConfig_send .~ newMessage
 
-  let someBS = "hello from Edit Widget"
-
-  imgEv <- liftIO $ createObjectURL someBS
-
-  el "div" $ text imgEv
 
   let
     myImgUrl =
@@ -89,13 +86,4 @@ createEditWidget _ idTxt = do
   let dynAttr = ffor urlDyn (\u -> ("src" =: u))
   elDynAttr "img" dynAttr $ return ()
 
-  -- receivedMessages <- foldDyn (\m ms -> ms ++ [m]) [] $ _webSocket_recv ws
-  -- el "p" $ text "Responses from the yesod server:"
-  -- let
-  --     -- dynAttr m =  ffor m (\bs -> (liftIO $ createObjectURL bs) >>= (\x -> ("src" =: x)))
-  -- _ <- el "ul" $ simpleList receivedMessages $ \m -> do
-  --           url <- forDynM m (\bs -> liftIO $ createObjectURL bs)
-  --           performEvent
-  --           let dynAttr = ffor url (\u -> ("src" =: u))
-  --           elDynAttr "img" dynAttr $ return ()
   return ()
