@@ -23,6 +23,7 @@ library
 
   other-modules:
       EditForeGround
+      Utils
 
   build-depends:
       base
