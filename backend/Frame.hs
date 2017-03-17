@@ -60,7 +60,8 @@ getPreviewBackgroundImageR imgID = do
 
       defaultLayout [whamlet|
         <p>
-        <img src=@{PngR pngID}>
+          <img src=@{PngR pngID}>
+        <p>Select a frame to apply
         $forall (k,fg) <- foreGrounds
           <a href=@{CreateFrameR k imgID}>
             <img src=@{PngR (foreGroundPng fg)}>
@@ -102,10 +103,11 @@ getMakeForeGroundR patID = do
         addToMVarMap (foreGroundDB appSt) ForeGroundID
           (ForeGroundData (origPatternData pat) mvar maskMvar)
 
+          -- <a href=@{EditForeGroundR fgID}>Edit Foreground
+          -- <a href=@{CreateMaskR fgID}> Foreground Mask
       defaultLayout [whamlet|
           <p>ForeGroundID = #{show (unForeGroundID fgID)}
-            -- <a href=@{EditForeGroundR fgID}>Edit Foreground
-            -- <a href=@{CreateMaskR fgID}> Foreground Mask
+          <p>Use this ID on the edit page
           <p><img src=@{PngR pngID}>
 |]
 
@@ -168,16 +170,23 @@ getCreateFrameR fgID imgID = do
     (Nothing, _) -> redirect HomeR
     (_, Nothing) -> redirect HomeR
     (Just fgd, Just img) -> do
+      sizeP <- lookupGetParam "size"
+      let size = getParamFromMaybe previewSize sizeP
+
       fg <- liftIO $ readMVar (foreGround fgd)
       m <- liftIO $ readMVar (mask fgd)
       let
         maskedImgData =
-          createFrame img fg m previewSize
+          createFrame img fg m size
 
       pngID <- liftIO $ do
         addToMVarMap (pngDB appSt) PngID maskedImgData
 
+      let
       defaultLayout [whamlet|$newline never
+          <p>Get High Quality
+            <a href=@?{(CreateFrameR fgID imgID, [("size","800")])}>800,
+            <a href=@?{(CreateFrameR fgID imgID, [("size","1200")])}>1200
           <p>
-          <img src=@{PngR pngID}>
+            <img src=@{PngR pngID}>
 |]

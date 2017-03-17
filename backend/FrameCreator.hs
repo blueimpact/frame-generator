@@ -89,7 +89,7 @@ getMask dia width (MaskParams dilValue blurVal) =
     jpData = JP.pixelMap invertTransparent (render dia width)
 
     -- An alpha value of zero represents full transparency,
-    -- and a value of (2^bitdepth)-1 represents a 
+    -- and a value of (2^bitdepth)-1 represents a
     -- fully opaque pixel
 
     -- Invert - Opaque -> White
@@ -171,7 +171,7 @@ getForeGround
         where
           x n = g sin n
           y n = g cos n
-          g f n = radiusAfterOffset*f 
+          g f n = radiusAfterOffset*f
             ((((-2)*(fromIntegral n))/(fromIntegral num))*pi)
 
 render ::
@@ -221,7 +221,11 @@ createFrame img fg mask width =
     imgJP = renderSquareImage (origBackgroundImage img) width
     fgJP = render (foreGroundDia fg) width
 
-    maskJP = JP.pixelMap modMask $ maskData mask
+
+    (_,_,_,msk) = getMask (foreGroundDia fg)
+            width (maskParams mask)
+
+    maskJP = JP.pixelMap modMask $ msk
 
     modMask :: JP.Pixel8 -> JP.PixelRGBA8
     -- Black portion, outside

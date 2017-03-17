@@ -36,10 +36,15 @@ patternForm = renderDivs $ UploadPatternForm
 
 getHomeR :: Handler Html
 getHomeR = do
-    defaultLayout [whamlet|$newline never
+    defaultLayout [whamlet|
       <p>Welcome!
-      <a href=@{UploadPatternR}>Upload Pattern
-      <a href=@{UploadBackgroundImageR}>Upload Image
+      <p>
+        <a href=@{UploadPatternR}>Upload Pattern
+        Images with only alpha layers tested!
+
+      <p>
+        <a href=@{UploadBackgroundImageR}>Upload Image
+        This can be anything, it will be cropped as a square left most side.
 |]
 
 getUploadPatternR :: Handler Html
