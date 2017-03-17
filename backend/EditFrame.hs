@@ -62,21 +62,31 @@ editForeGroundWebSocketWidget appSt fgd = do
   fgRef <- liftIO $ do
     fg <- readMVar (foreGround fgd)
     newIORef $ fg
-  
 
-  sourceWS $$ Data.Conduit.List.mapMaybeM 
+
+  sourceWS $$ Data.Conduit.List.mapMaybeM
       (handleRequest fgRef)
     =$= sinkWSBinary
   where
     handleRequest :: (MonadIO m, MonadLogger m)
       => IORef ForeGround
-      -> BS.ByteString 
+      -> BS.ByteString
       -> m (Maybe BS.ByteString)
     handleRequest fgRef req' = do
       case decodeStrict' req' of
         Just (ClientReqSaveFG) -> do
           liftIO $ do
-            fgVal <- readIORef fgRef 
+            fgVal <- readIORef fgRef
+
+            db <- readMVar (pngDB appSt)
+
+            let pngData = encodeToPng
+                  (foreGroundDia fgVal) previewSize
+
+                newDB = Map.update (const $ Just pngData)
+                        (foreGroundPng fgVal) db
+
+            swapMVar (pngDB appSt) newDB
             takeMVar (foreGround fgd) -- discard old
             putMVar (foreGround fgd) fgVal
 
@@ -95,7 +105,7 @@ editForeGroundWebSocketWidget appSt fgd = do
 
               pngData = encodeToPng newFG previewSize
 
-          liftIO $ writeIORef fgRef (ForeGround newFG fgparam 
+          liftIO $ writeIORef fgRef (ForeGround newFG fgparam
             (foreGroundPng fg))
           return $ Just pngData
 
@@ -167,17 +177,17 @@ getEditMaskR fgID = do
 
 editMaskWebSocketWidget appSt fgd = do
   $logInfo $ "edit mask: Websocket version"
-  
+
   maskRef <- liftIO $ do
     fg <- readMVar (foreGround fgd)
 
-    let (_,_,_,msk) = 
+    let (_,_,_,msk) =
           getMask (foreGroundDia fg)
             previewSize (MaskParams 2 2)
     newIORef $
       Mask (MaskParams 2 2) msk
 
-  sourceWS $$ Data.Conduit.List.mapMaybeM 
+  sourceWS $$ Data.Conduit.List.mapMaybeM
       (handleRequest maskRef)
     =$= sinkWSBinary
   where
@@ -199,11 +209,11 @@ editMaskWebSocketWidget appSt fgd = do
           -- Avoid this readMVar
           fg <- liftIO $ readMVar (foreGround fgd)
 
-          let maskParams = MaskParams 
+          let maskParams = MaskParams
                 (clientReqEditMaskDilate req)
                 (clientReqEditMaskBlur req)
 
-              (_,_,subt,msk) = 
+              (_,_,subt,msk) =
                 getMask (foreGroundDia fg)
                   previewSize maskParams
 

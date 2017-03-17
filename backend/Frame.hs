@@ -80,9 +80,9 @@ getMakeForeGroundR patID = do
           ForeGroundParams
             (defaultCount pat)
             (defaultRadius pat)
-            0 -- radiusOffset
+            0 -- rotationOffset
             1.0 -- scaling
-            0 -- radiusOffset
+            100 -- radiusOffset %
             (origTemplate pat)
 
         fg = getForeGround fgParams (origPatternData pat)
@@ -102,11 +102,11 @@ getMakeForeGroundR patID = do
         addToMVarMap (foreGroundDB appSt) ForeGroundID
           (ForeGroundData (origPatternData pat) mvar maskMvar)
 
-      defaultLayout [whamlet|$newline never
-          <p>
-          <a href=@{EditForeGroundR fgID}>Edit Foreground
-          <a href=@{CreateMaskR fgID}>Foreground Mask
-          <img src=@{PngR pngID}>
+      defaultLayout [whamlet|
+          <p>ForeGroundID = #{show (unForeGroundID fgID)}
+            -- <a href=@{EditForeGroundR fgID}>Edit Foreground
+            -- <a href=@{CreateMaskR fgID}> Foreground Mask
+          <p><img src=@{PngR pngID}>
 |]
 
 -- Create a basic default mask

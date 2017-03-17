@@ -85,7 +85,7 @@ postUploadPatternR = do
 
       patID <- liftIO $ addToMVarMap (patternDB appSt) PatternID pd
 
-      redirect $ PreviewPatternR patID
+      redirect $ MakeForeGroundR patID
 
 data UploadBackgroundImageForm = UploadBackgroundImageForm FileInfo
 
