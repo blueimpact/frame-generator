@@ -164,13 +164,15 @@ getForeGround
     rotOffsetApplied = map (\(n,i) ->
       (n,rotate ((initRot + rotOffset) @@ deg) i)) rotatedList
 
+    radiusAfterOffset = radius * (radiusOffset/100)
     -- Apply transformations
     transList =
       map (\(n,i) -> (n, translateX (x n) (translateY (y n) i))) rotOffsetApplied
         where
           x n = g sin n
           y n = g cos n
-          g f n = radius*f ((((-2)*(fromIntegral n))/(fromIntegral num))*pi)
+          g f n = radiusAfterOffset*f 
+            ((((-2)*(fromIntegral n))/(fromIntegral num))*pi)
 
 render ::
      Diagram Rasterific

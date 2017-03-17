@@ -11,7 +11,7 @@ import Web.PathPieces
 import qualified Codec.Picture.Types as JP
 
 previewSize :: Int
-previewSize = 1200
+previewSize = 600
 
 newtype PatternID = PatternID { unPatternID :: Int}
   deriving (Read, PathPiece, Show, Eq, Ord)

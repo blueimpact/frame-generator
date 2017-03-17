@@ -75,10 +75,43 @@ createEditWidget _ idTxt = do
 
   el "div" $ text ("Editing ForeGroundID: " <> idTxt)
 
-  let scaleConf = RangeInputConfig 1.0 never (constDyn $ ("min" =: "0.1") <> ("max" =: "2.0") <> ("step" =: "0.05"))
-  scaleRange <- rangeInput scaleConf
+  let scaleConf =
+        RangeInputConfig 1.0 never
+          (constDyn $ ("min" =: "0.1") <> ("max" =: "2.0") <> ("step" =: "0.05"))
 
-  let eventMessage = getEventMessage scaleRange
+      countConf =
+        RangeInputConfig 8 never
+          (constDyn $ ("min" =: "2") <> ("max" =: "128") <> ("step" =: "1"))
+
+      rotateConf =
+        RangeInputConfig 0 never
+          (constDyn $ ("min" =: "-180") <> ("max" =: "180") <> ("step" =: "1"))
+
+      radOffConf =
+        RangeInputConfig 100 never
+          (constDyn $ ("min" =: "1") <> ("max" =: "200") <> ("step" =: "1"))
+
+  inputs <- el "table" $ do
+    el "tr" $ text "Scale"
+    s <- el "tr" $ do
+      rangeInput scaleConf
+
+    el "tr" $ text "Count"
+    c <- el "tr" $ do
+      rangeInput countConf 
+
+    el "tr" $ text "Rotation"
+    ro <- el "tr" $ do
+      rangeInput rotateConf 
+
+    el "tr" $ text "Radius"
+    ra <- el "tr" $ do
+      rangeInput radOffConf
+
+    return (s,c,ro,ra)
+
+  let eventMessage = getEventMessage inputs
+
   ws <- webSocket ("ws://localhost:3000/edit/foreground/" <> idTxt) $ def & webSocketConfig_send .~ eventMessage
 
   let
@@ -93,14 +126,17 @@ createEditWidget _ idTxt = do
 
   return ()
 
-getEventMessage :: (Reflex t) => RangeInput t -> Event t [ByteString]
-getEventMessage scale = tagDyn message anyEvent
+getEventMessage :: (Reflex t) =>
+     (RangeInput t, RangeInput t, RangeInput t, RangeInput t)
+  -> Event t [ByteString]
+getEventMessage (scale, count, rotate, radius) = tagDyn message anyEvent
   where
-    anyEvent = leftmost $ fmap _rangeInput_input [scale]
+    anyEvent = leftmost $ fmap _rangeInput_input [scale, count, rotate, radius]
+
     message = (:[]) <$> BSL.toStrict <$> encode <$> (ClientReqEditFG
-      <$> pure 8
-      <*> pure 0.0
-      <*>  ftod (_rangeInput_value scale)
-      <*> pure 0.0)
+      <$> (ceiling <$> _rangeInput_value count)
+      <*> ftod (_rangeInput_value rotate)
+      <*> ftod (_rangeInput_value scale)
+      <*> ftod (_rangeInput_value radius))
 
     ftod f = fmap realToFrac f

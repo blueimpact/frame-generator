@@ -65,11 +65,14 @@ editForeGroundWebSocketWidget appSt fgd = do
     handleRequest req' = do
       case decodeStrict' req' of
         Nothing -> return Nothing
-        Just (ClientReqEditFG c r s _) -> do
+        Just req -> do
           $logInfo $ "edit foreground: Valid request"
           fg <- liftIO $ readMVar (foreGround fgd)
           let fgparam = (foreGroundParams fg)
-                {scaling = s}
+                { scaling = clientReqEditFGScaling req
+                , patternCount = clientReqEditFGCount req
+                , rotationOffset = clientReqEditFGRotation req
+                , radiusOffset = clientReqEditFGRadiusOff req}
               newFG = getForeGround fgparam
                         (pattern fgd)
 
