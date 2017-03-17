@@ -33,6 +33,7 @@ library
     , file-embed
     , bytestring
     , frame-generator-common
+    , aeson
   default-language:    Haskell2010
   ghc-options: -fno-warn-missing-signatures
 

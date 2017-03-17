@@ -16,6 +16,7 @@ import Control.Monad
 import Data.Conduit
 import qualified Data.Conduit.List
 import qualified Data.ByteString as BS
+import Data.Aeson
 
 getEditForeGroundR :: ForeGroundID -> Handler Html
 getEditForeGroundR fgID = do
@@ -57,19 +58,24 @@ getEditForeGroundR fgID = do
 -- editForeGroundWebSocketWidget ::
 editForeGroundWebSocketWidget appSt fgd = do
   $logInfo $ "edit foreground: Websocket version"
-  sourceWS $$ Data.Conduit.List.mapM handleRequest
+  sourceWS $$ Data.Conduit.List.mapMaybeM handleRequest
     =$= sinkWSBinary
   where
-    handleRequest :: (MonadIO m) => BS.ByteString -> m BS.ByteString
-    handleRequest req = do
-      fg <- liftIO $ readMVar (foreGround fgd)
-      let pngID = foreGroundPng fg
+    handleRequest :: (MonadIO m, MonadLogger m) => BS.ByteString -> m (Maybe BS.ByteString)
+    handleRequest req' = do
+      case decodeStrict' req' of
+        Nothing -> return Nothing
+        Just (ClientReqEditFG c r s _) -> do
+          $logInfo $ "edit foreground: Valid request"
+          fg <- liftIO $ readMVar (foreGround fgd)
+          let fgparam = (foreGroundParams fg)
+                {scaling = s}
+              newFG = getForeGround fgparam
+                        (pattern fgd)
 
-      pngDB <- liftIO $ readMVar (pngDB appSt)
+              pngData = encodeToPng newFG previewSize
 
-      case Map.lookup pngID pngDB of
-        Nothing -> return BS.empty
-        Just d -> return d
+          return $ Just pngData
 
 -- Fetch the parameters by URL/RESTful way
 getNewForeGroundParams :: ForeGroundParams -> Handler ForeGroundParams

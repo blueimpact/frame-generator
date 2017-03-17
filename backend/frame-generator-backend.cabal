@@ -35,5 +35,6 @@ executable          frame-generator-backend
                 , conduit
                 , friday
                 , friday-juicypixels
+                , aeson
 
   ghc-options:    -threaded -O2 -rtsopts -with-rtsopts=-N
