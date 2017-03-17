@@ -12,7 +12,13 @@ data ClientReqEditFG = ClientReqEditFG {
   , clientReqEditFGRotation   :: Double -- In Degrees
   , clientReqEditFGScaling    :: Double
   , clientReqEditFGRadiusOff  :: Double -- %age
+} 
+  | ClientReqEditMask {
+    clientReqEditMaskDilate   :: Int
+  , clientReqEditMaskBlur     :: Int
 }
+  | ClientReqSaveFG
+  | ClientReqSaveMask
   deriving (Generic, Show)
 
 instance ToJSON ClientReqEditFG where

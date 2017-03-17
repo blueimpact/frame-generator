@@ -26,25 +26,10 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 
-editForegroundWidget ::
-  (MonadWidget t m
-  , PerformEvent t m) => m ()
-editForegroundWidget = do
-  el "div" $ text "Enter the Image ID"
-
-  currentPageUrl <-textInput $ def {_textInputConfig_initialValue = "Yesod URL"}
-  rec t <- textInput $ def & setValue .~ fmap (const "") newMessage
-      b <- button "Send"
-      let
-          urlValDyn = zipDyn (_textInput_value currentPageUrl) (_textInput_value t)
-          newMessage = tagDyn urlValDyn $ leftmost [b, keypress Enter t]
-
-          evMap = ffor newMessage (\t -> Map.singleton (0 ::Int) (Just t))
-
+editForegroundWidget evMap = do
   listHoldWithKey Map.empty evMap createEditWidget
   return ()
 
---createEditWidget :: Int -> Text -> _
 createEditWidget _ (url, idTxt) = do
 
   el "div" $ text ("Editing ForeGroundID: " <> idTxt)
@@ -82,7 +67,8 @@ createEditWidget _ (url, idTxt) = do
     ra <- el "tr" $ do
       rangeInput radOffConf
 
-    return (s,c,ro,ra)
+    save <- button "Save ForeGround"
+    return (s,c,ro,ra, save)
 
   let eventMessage = getEventMessage inputs
 
@@ -101,13 +87,21 @@ createEditWidget _ (url, idTxt) = do
   return ()
 
 getEventMessage :: (Reflex t) =>
-     (RangeInput t, RangeInput t, RangeInput t, RangeInput t)
+     (RangeInput t, RangeInput t, RangeInput t, RangeInput t, Event t ())
   -> Event t [ByteString]
-getEventMessage (scale, count, rotate, radius) = tagDyn message anyEvent
+getEventMessage (scale, count, rotate, radius, save) = 
+  leftmost $ [saveEv, editEv]
   where
-    anyEvent = leftmost $ fmap _rangeInput_input [scale, count, rotate, radius]
+    anyEditEvent = leftmost $ 
+      fmap _rangeInput_input
+        [scale, count, rotate, radius]
+     
+    enc mes = (:[]) <$> BSL.toStrict <$> encode <$> mes
+    
+    saveEv = enc $ fmap (const ClientReqSaveFG) save
+    editEv = enc $ tagDyn message anyEditEvent
 
-    message = (:[]) <$> BSL.toStrict <$> encode <$> (ClientReqEditFG
+    message = (ClientReqEditFG
       <$> (ceiling <$> _rangeInput_value count)
       <*> ftod (_rangeInput_value rotate)
       <*> ftod (_rangeInput_value scale)

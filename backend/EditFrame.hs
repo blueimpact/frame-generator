@@ -10,6 +10,7 @@ import FrameCreator
 import Utils
 import Common
 
+import Data.IORef
 import Control.Concurrent.MVar
 import qualified Data.Map as Map
 import Control.Monad
@@ -58,14 +59,30 @@ getEditForeGroundR fgID = do
 -- editForeGroundWebSocketWidget ::
 editForeGroundWebSocketWidget appSt fgd = do
   $logInfo $ "edit foreground: Websocket version"
-  sourceWS $$ Data.Conduit.List.mapMaybeM handleRequest
+  fgRef <- liftIO $ do
+    fg <- readMVar (foreGround fgd)
+    newIORef $ fg
+  
+
+  sourceWS $$ Data.Conduit.List.mapMaybeM 
+      (handleRequest fgRef)
     =$= sinkWSBinary
   where
-    handleRequest :: (MonadIO m, MonadLogger m) => BS.ByteString -> m (Maybe BS.ByteString)
-    handleRequest req' = do
+    handleRequest :: (MonadIO m, MonadLogger m)
+      => IORef ForeGround
+      -> BS.ByteString 
+      -> m (Maybe BS.ByteString)
+    handleRequest fgRef req' = do
       case decodeStrict' req' of
-        Nothing -> return Nothing
-        Just req -> do
+        Just (ClientReqSaveFG) -> do
+          liftIO $ do
+            fgVal <- readIORef fgRef 
+            takeMVar (foreGround fgd) -- discard old
+            putMVar (foreGround fgd) fgVal
+
+          return Nothing
+
+        Just req@(ClientReqEditFG _ _ _ _) -> do
           $logInfo $ "edit foreground: Valid request"
           fg <- liftIO $ readMVar (foreGround fgd)
           let fgparam = (foreGroundParams fg)
@@ -78,7 +95,11 @@ editForeGroundWebSocketWidget appSt fgd = do
 
               pngData = encodeToPng newFG previewSize
 
+          liftIO $ writeIORef fgRef (ForeGround newFG fgparam 
+            (foreGroundPng fg))
           return $ Just pngData
+
+        _ -> return Nothing
 
 -- Fetch the parameters by URL/RESTful way
 getNewForeGroundParams :: ForeGroundParams -> Handler ForeGroundParams
@@ -97,3 +118,97 @@ getNewForeGroundParams fgParams = do
       (getParamFromMaybe (radiusOffset   fgParams) radOff)
       (template       fgParams)
   return newFgParams
+
+getEditMaskR :: ForeGroundID -> Handler Html
+getEditMaskR fgID = do
+  $logInfo $ "Doing edit Mask"
+  appSt <- getYesod
+
+  db <- liftIO $ readMVar (foreGroundDB appSt)
+
+  case Map.lookup fgID db of
+    Nothing -> redirect HomeR
+    Just fgd -> do
+      webSockets (editMaskWebSocketWidget appSt fgd)
+      fg <- liftIO $ readMVar (foreGround fgd)
+
+      dilParam <- lookupGetParam "dilate"
+      blurParam <- lookupGetParam "blur"
+      let dilVal :: Int
+          dilVal = getParamFromMaybe 0 dilParam
+
+          blurVal :: Int
+          blurVal = getParamFromMaybe 0 blurParam
+
+      let (dil,ff,subt,msk) =
+            getMask (foreGroundDia fg) previewSize maskParams
+          maskParams = MaskParams dilVal blurVal
+
+      pngID <- liftIO $ do
+        addToMVarMap (pngDB appSt) PngID dil
+
+      pngID2 <- liftIO $ do
+        addToMVarMap (pngDB appSt) PngID ff
+
+      pngID3 <- liftIO $ do
+        addToMVarMap (pngDB appSt) PngID subt
+
+      liftIO $ do
+        tryTakeMVar (mask fgd) -- discard old
+        putMVar (mask fgd) (Mask maskParams msk)
+
+      defaultLayout [whamlet|$newline never
+          <p>
+          <a href=@{EditMaskR fgID}>Edit Mask
+          <img src=@{PngR pngID}>
+          <img src=@{PngR pngID2}>
+          <img src=@{PngR pngID3}>
+|]
+
+editMaskWebSocketWidget appSt fgd = do
+  $logInfo $ "edit mask: Websocket version"
+  
+  maskRef <- liftIO $ do
+    fg <- readMVar (foreGround fgd)
+
+    let (_,_,_,msk) = 
+          getMask (foreGroundDia fg)
+            previewSize (MaskParams 2 2)
+    newIORef $
+      Mask (MaskParams 2 2) msk
+
+  sourceWS $$ Data.Conduit.List.mapMaybeM 
+      (handleRequest maskRef)
+    =$= sinkWSBinary
+  where
+    handleRequest :: (MonadIO m, MonadLogger m)
+      => IORef Mask
+      -> BS.ByteString
+      -> m (Maybe BS.ByteString)
+    handleRequest maskRef req' = do
+      case decodeStrict' req' of
+        Just (ClientReqSaveMask) -> do
+          liftIO $ do
+            msk <- readIORef maskRef
+            tryTakeMVar (mask fgd) -- discard old
+            putMVar (mask fgd) msk
+          return Nothing
+
+        Just req@(ClientReqEditMask _ _) -> do
+          $logInfo $ "edit mask: Valid request"
+          -- Avoid this readMVar
+          fg <- liftIO $ readMVar (foreGround fgd)
+
+          let maskParams = MaskParams 
+                (clientReqEditMaskDilate req)
+                (clientReqEditMaskBlur req)
+
+              (_,_,subt,msk) = 
+                getMask (foreGroundDia fg)
+                  previewSize maskParams
+
+          liftIO $ writeIORef maskRef (Mask maskParams msk)
+          return $ Just subt
+
+        _ -> return Nothing
+

@@ -33,8 +33,8 @@ getPreviewPatternR patID = do
 
       defaultLayout [whamlet|$newline never
         <p>
-        <img src=@{PngR pngID}>
         <a href=@{MakeForeGroundR patID}>Make Foreground
+        <img src=@{PngR pngID}>
 |]
 
 getPreviewBackgroundImageR :: BackgroundImageID -> Handler Html
@@ -104,9 +104,9 @@ getMakeForeGroundR patID = do
 
       defaultLayout [whamlet|$newline never
           <p>
-          <img src=@{PngR pngID}>
           <a href=@{EditForeGroundR fgID}>Edit Foreground
           <a href=@{CreateMaskR fgID}>Foreground Mask
+          <img src=@{PngR pngID}>
 |]
 
 -- Create a basic default mask
@@ -140,56 +140,12 @@ getCreateMaskR fgID = do
 
       defaultLayout [whamlet|$newline never
           <p>
+          <a href=@{EditMaskR fgID}>Edit Mask
           <img src=@{PngR pngID}>
           <img src=@{PngR pngID2}>
           <img src=@{PngR pngID3}>
-          <a href=@{EditMaskR fgID}>Edit Mask
 |]
 
-
-getEditMaskR :: ForeGroundID -> Handler Html
-getEditMaskR fgID = do
-  appSt <- getYesod
-
-  db <- liftIO $ readMVar (foreGroundDB appSt)
-
-  case Map.lookup fgID db of
-    Nothing -> redirect HomeR
-    Just fgd -> do
-      fg <- liftIO $ readMVar (foreGround fgd)
-
-      dilParam <- lookupGetParam "dilate"
-      blurParam <- lookupGetParam "blur"
-      let dilVal :: Int
-          dilVal = getParamFromMaybe 0 dilParam
-
-          blurVal :: Int
-          blurVal = getParamFromMaybe 0 blurParam
-
-      let (dil,ff,subt,msk) =
-            getMask (foreGroundDia fg) previewSize maskParams
-          maskParams = MaskParams dilVal blurVal
-
-      pngID <- liftIO $ do
-        addToMVarMap (pngDB appSt) PngID dil
-
-      pngID2 <- liftIO $ do
-        addToMVarMap (pngDB appSt) PngID ff
-
-      pngID3 <- liftIO $ do
-        addToMVarMap (pngDB appSt) PngID subt
-
-      liftIO $ do
-        tryTakeMVar (mask fgd) -- discard old
-        putMVar (mask fgd) (Mask maskParams msk)
-
-      defaultLayout [whamlet|$newline never
-          <p>
-          <img src=@{PngR pngID}>
-          <img src=@{PngR pngID2}>
-          <img src=@{PngR pngID3}>
-          <a href=@{EditMaskR fgID}>Edit Mask
-|]
 
 getPngR :: PngID -> Handler TypedContent
 getPngR pngID = do
