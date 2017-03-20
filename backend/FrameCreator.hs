@@ -179,7 +179,7 @@ render ::
   -> Int
   -> JP.Image JP.PixelRGBA8
 render dia width = renderDia Rasterific
-          (RasterificOptions (mkWidth w))
+          (RasterificOptions (mkSizeSpec2D (Just w) (Just w)))
           (dia)
   where
     w :: Double
@@ -200,9 +200,14 @@ renderSquareImage diaImg width = squareImage
 
     -- squareImage :: JP.Pixel a => JP.Image a
     squareImage = JP.generateImage
-      (\x y -> JP.pixelAt img x y) edge edge
-    edge = min (JP.imageWidth img) (JP.imageHeight img)
+      (\x y -> JP.pixelAt img (x + xoff) (y + yoff)) edge edge
 
+    edge = min wi hi
+    wi = (JP.imageWidth img)
+    hi = (JP.imageHeight img)
+
+    xoff = if wi > hi then (ceiling ((fromIntegral (wi - edge))/2.0)) else 0
+    yoff = if wi < hi then (ceiling ((fromIntegral (hi - edge))/2.0)) else 0
 
 createFrame ::
      BackgroundImage
@@ -231,7 +236,7 @@ createFrame img fg mask width =
     -- Black portion, outside
     modMask 0 = JP.PixelRGBA8 0 0 0 0
     -- White portion, inside
-    modMask a = JP.PixelRGBA8 a a a a
+    modMask a = JP.PixelRGBA8 255 255 255 a
 
     maskedImgJpData =
       JP.zipPixelComponent3 doMasking

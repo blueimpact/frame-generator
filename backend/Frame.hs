@@ -185,8 +185,10 @@ getCreateFrameR fgID imgID = do
       let
       defaultLayout [whamlet|$newline never
           <p>Get High Quality
+
             <a href=@?{(CreateFrameR fgID imgID, [("size","800")])}>800,
             <a href=@?{(CreateFrameR fgID imgID, [("size","1200")])}>1200
+          <p>If high quality images have improper mask, then increase the blur/dilute amount
           <p>
             <img src=@{PngR pngID}>
 |]
