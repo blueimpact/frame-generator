@@ -24,6 +24,7 @@ library
                      Handler.Home
                      Handler.Frame
                      Handler.EditFrame
+                     Handler.Admin
                      Utils.FrameCreator
                      Utils.Misc
 

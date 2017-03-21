@@ -35,6 +35,7 @@ import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
 import Handler.Home
 import Handler.Frame
 import Handler.EditFrame
+import Handler.Admin
 
 import AppData
 import qualified Data.Map as Map

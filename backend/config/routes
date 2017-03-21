@@ -20,5 +20,8 @@
 
 /create/frame/#ForeGroundID/#BackgroundImageID CreateFrameR GET
 
+/admin                          AdminR GET
+/admin/reset                    AdminResetR GET
+
 -- Host all output images on this route
 /getpng/#PngID                  PngR GET
