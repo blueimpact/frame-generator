@@ -1,3 +1,7 @@
+/static StaticR Static appStatic
+
+/auth   AuthR   Auth   getAuth
+
 /              HomeR GET
 
 /pattern/list                   PatternsListR GET

@@ -1,15 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
-module Frame where
+module Handler.Frame where
 
-import Foundation
-import Yesod.Core
-import FrameCreator
-import Utils
+import Import
+import AppData
+import Utils.FrameCreator
+import Utils.Misc
 
-import Control.Concurrent.MVar
 import qualified Data.Map as Map
-import Control.Monad
 
 -- Spec
 -- Create foreground for pattern with default setup
@@ -18,7 +16,7 @@ import Control.Monad
 
 getPreviewPatternR :: PatternID -> Handler Html
 getPreviewPatternR patID = do
-  appSt <- getYesod
+  appSt <- appData <$> getYesod
 
   db <- liftIO $ readMVar (patternDB appSt)
 
@@ -39,7 +37,7 @@ getPreviewPatternR patID = do
 
 getPreviewBackgroundImageR :: BackgroundImageID -> Handler Html
 getPreviewBackgroundImageR imgID = do
-  appSt <- getYesod
+  appSt <- appData <$> getYesod
 
   db <- liftIO $ readMVar (imageDB appSt)
 
@@ -69,7 +67,7 @@ getPreviewBackgroundImageR imgID = do
 
 getMakeForeGroundR :: PatternID -> Handler Html
 getMakeForeGroundR patID = do
-  appSt <- getYesod
+  appSt <- appData <$> getYesod
 
   db <- liftIO $ readMVar (patternDB appSt)
 
@@ -114,7 +112,7 @@ getMakeForeGroundR patID = do
 -- Create a basic default mask
 getCreateMaskR :: ForeGroundID -> Handler Html
 getCreateMaskR fgID = do
-  appSt <- getYesod
+  appSt <- appData <$> getYesod
 
   db <- liftIO $ readMVar (foreGroundDB appSt)
 
@@ -137,8 +135,8 @@ getCreateMaskR fgID = do
         addToMVarMap (pngDB appSt) PngID subt
 
       liftIO $ do
-        tryTakeMVar (mask fgd) -- discard old
-        putMVar (mask fgd) (Mask maskParams msk)
+        _ <- tryTakeMVar (AppData.mask fgd) -- discard old
+        putMVar (AppData.mask fgd) (Mask maskParams msk)
 
       defaultLayout [whamlet|$newline never
           <p>
@@ -151,7 +149,7 @@ getCreateMaskR fgID = do
 
 getPngR :: PngID -> Handler TypedContent
 getPngR pngID = do
-  appSt <- getYesod
+  appSt <- appData <$> getYesod
   db <- liftIO $ readMVar (pngDB appSt)
 
   let pngData = Map.lookup pngID db
@@ -161,7 +159,7 @@ getPngR pngID = do
 
 getCreateFrameR :: ForeGroundID -> BackgroundImageID -> Handler Html
 getCreateFrameR fgID imgID = do
-  appSt <- getYesod
+  appSt <- appData <$> getYesod
 
   fgDB <- liftIO $ readMVar (foreGroundDB appSt)
   imgDB <- liftIO $ readMVar (imageDB appSt)
@@ -174,7 +172,7 @@ getCreateFrameR fgID imgID = do
       let size = getParamFromMaybe previewSize sizeP
 
       fg <- liftIO $ readMVar (foreGround fgd)
-      m <- liftIO $ readMVar (mask fgd)
+      m <- liftIO $ readMVar (AppData.mask fgd)
       let
         maskedImgData =
           createFrame img fg m size

@@ -1,17 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
-module EditFrame where
+module Handler.EditFrame where
 
-import Foundation
-import Yesod.Core
+import Import
 import Yesod.WebSockets
-import FrameCreator
-import Utils
+import Utils.FrameCreator
+import Utils.Misc
 import Common
+import AppData
 
-import Data.IORef
-import Control.Concurrent.MVar
 import qualified Data.Map as Map
 import Control.Monad
 import Data.Conduit
@@ -22,7 +20,7 @@ import Data.Aeson
 getEditForeGroundR :: ForeGroundID -> Handler Html
 getEditForeGroundR fgID = do
   $logInfo $ "Doing edit foreground"
-  appSt <- getYesod
+  appSt <- appData <$> getYesod
 
   db <- liftIO $ readMVar (foreGroundDB appSt)
 
@@ -132,7 +130,7 @@ getNewForeGroundParams fgParams = do
 getEditMaskR :: ForeGroundID -> Handler Html
 getEditMaskR fgID = do
   $logInfo $ "Doing edit Mask"
-  appSt <- getYesod
+  appSt <- appData <$> getYesod
 
   db <- liftIO $ readMVar (foreGroundDB appSt)
 
@@ -164,8 +162,8 @@ getEditMaskR fgID = do
         addToMVarMap (pngDB appSt) PngID subt
 
       liftIO $ do
-        tryTakeMVar (mask fgd) -- discard old
-        putMVar (mask fgd) (Mask maskParams msk)
+        tryTakeMVar (AppData.mask fgd) -- discard old
+        putMVar (AppData.mask fgd) (Mask maskParams msk)
 
       defaultLayout [whamlet|$newline never
           <p>
@@ -200,8 +198,8 @@ editMaskWebSocketWidget appSt fgd = do
         Just (ClientReqSaveMask) -> do
           liftIO $ do
             msk <- readIORef maskRef
-            tryTakeMVar (mask fgd) -- discard old
-            putMVar (mask fgd) msk
+            tryTakeMVar (AppData.mask fgd) -- discard old
+            putMVar (AppData.mask fgd) msk
           return Nothing
 
         Just req@(ClientReqEditMask _ _) -> do

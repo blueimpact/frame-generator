@@ -1,24 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
-module Home where
+module Handler.Home where
 
-import Foundation
-import Yesod.Core
-import Yesod.Form
+import Import
+import AppData
 
 import qualified Data.Map as Map
-import Control.Concurrent.MVar
 import System.Random
 import qualified Data.Text as T
-import Data.Conduit
 import Data.Conduit.List
-import Data.Monoid
-import Control.Monad (join)
-import Data.ByteString
 
-import FrameCreator
-import Utils
+import Utils.FrameCreator
+import Utils.Misc
 
 -- Spec
 -- Upload the user given pattern and do error checking
@@ -86,7 +80,7 @@ postUploadPatternR = do
     Just pd -> do -- Store pd and go to preview
       $logInfo $ "Parse succesful"
 
-      appSt <- getYesod
+      appSt <- appData <$> getYesod
 
       patID <- liftIO $ addToMVarMap (patternDB appSt) PatternID pd
 
@@ -136,7 +130,7 @@ postUploadBackgroundImageR = do
     Just img -> do -- Store pd and go to preview
       $logInfo $ "Parse succesful"
 
-      appSt <- getYesod
+      appSt <- appData <$> getYesod
 
       imgID <- liftIO $ addToMVarMap (imageDB appSt)
        BackgroundImageID img

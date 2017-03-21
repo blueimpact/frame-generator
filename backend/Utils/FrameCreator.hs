@@ -5,9 +5,11 @@
 {-# LANGUAGE AllowAmbiguousTypes       #-}
 
 -- Algo for doing image creation/manipulation
-module FrameCreator where
+module Utils.FrameCreator where
 
 import AppData
+
+import Prelude
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy

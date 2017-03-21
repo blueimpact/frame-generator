@@ -2,6 +2,9 @@
 module AppData
   where
 
+import ClassyPrelude
+import Data.Int
+import Data.Either
 import Data.Map (Map)
 import Control.Concurrent.MVar
 import Diagrams.Core.Types
@@ -76,7 +79,7 @@ newtype BackgroundImageID = BackgroundImageID { unBackgroundImageID :: Int}
 newtype PngID = PngID { unPngID :: Int}
   deriving (Read, PathPiece, Show, Eq, Ord)
 
-data App = App {
+data AppData = AppData {
     patternDB       :: MVar (Map PatternID PatternData)
   , foreGroundDB    :: MVar (Map ForeGroundID ForeGroundData)
   , pngDB           :: MVar (Map PngID ByteString)

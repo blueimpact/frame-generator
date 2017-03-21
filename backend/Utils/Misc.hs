@@ -1,9 +1,10 @@
-module Utils where
+module Utils.Misc where
+
+import ClassyPrelude
 
 import System.Random
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Control.Concurrent.MVar
 import Control.Monad
 import Text.Read (readMaybe)
 import qualified Data.Text as T
