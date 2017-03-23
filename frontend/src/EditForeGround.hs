@@ -4,6 +4,8 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 
 module EditForeGround where
 
@@ -26,11 +28,9 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 
-editForegroundWidget evMap = do
-  listHoldWithKey Map.empty evMap createEditWidget
-  return ()
+editForegroundWidget = createEditWidget
 
-createEditWidget _ (url, idTxt) = do
+createEditWidget url idTxt = do
 
   el "div" $ text ("Editing ForeGroundID: " <> idTxt)
 

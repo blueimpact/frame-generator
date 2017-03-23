@@ -4,6 +4,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 module EditMask where
 
@@ -26,11 +27,9 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 
-editMaskWidget evMap = do
-  listHoldWithKey Map.empty evMap createEditWidget
-  return ()
+editMaskWidget = createEditWidget
 
-createEditWidget _ (url, idTxt) = do
+createEditWidget url idTxt = do
 
   let 
       dilateConf =

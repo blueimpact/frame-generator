@@ -103,11 +103,13 @@ getMakeForeGroundR patID = do
 
           -- <a href=@{EditForeGroundR fgID}>Edit Foreground
           -- <a href=@{CreateMaskR fgID}> Foreground Mask
-      defaultLayout [whamlet|
-          <p>ForeGroundID = #{show (unForeGroundID fgID)}
-          <p>Use this ID on the edit page
-          <p><img src=@{PngR pngID}>
-|]
+      redirect $ (StaticR editapp_index_html, 
+        [("fgid", tshow $ unForeGroundID$ fgID)])
+--      defaultLayout [whamlet|
+--          <p>ForeGroundID = #{show (unForeGroundID fgID)}
+--          <p>Use this ID on the edit page
+--          <p><img src=@{PngR pngID}>
+-- |]
 
 -- Create a basic default mask
 getCreateMaskR :: ForeGroundID -> Handler Html
