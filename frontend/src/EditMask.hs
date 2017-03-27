@@ -33,11 +33,11 @@ createEditWidget url idTxt = do
   let 
       dilateConf =
         RangeInputConfig 2 never
-          (constDyn $ ("min" =: "0") <> ("max" =: "10") <> ("step" =: "1"))
+          (constDyn $ ("min" =: "0") <> ("max" =: "20") <> ("step" =: "1"))
 
       blurConf =
         RangeInputConfig 2 never
-          (constDyn $ ("min" =: "0") <> ("max" =: "10") <> ("step" =: "1"))
+          (constDyn $ ("min" =: "0") <> ("max" =: "50") <> ("step" =: "1"))
 
   inputs <- el "table" $ do
     el "tr" $ text "Dilate"
