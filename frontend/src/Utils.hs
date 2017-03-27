@@ -6,7 +6,7 @@
 -- {-# LANGUAGE GADTs #-}
 
 module Utils 
-  (createObjectURL)
+  (createObjectURL, enc)
   where
 
 import Reflex.Dom
@@ -25,8 +25,12 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 
+import Data.Aeson
+
 foreign import javascript unsafe "window['URL']['createObjectURL']($1)" createObjectURL_ :: Blob.Blob -> IO JS.JSVal
 
+enc :: (ToJSON a, Functor f) => f a -> f [ByteString]
+enc mes = (:[]) <$> BSL.toStrict <$> encode <$> mes
 
 createObjectURL :: ByteString -> IO Text
 createObjectURL bs = do

@@ -15,6 +15,7 @@ import Control.Monad
 import Data.Conduit
 import qualified Data.Conduit.List
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
 import Data.Aeson
 
 getEditForeGroundR :: ForeGroundID -> Handler Html
@@ -213,23 +214,34 @@ editMaskWebSocketWidget appSt fgd = do
         _ -> return Nothing
 
 -- Serve data to edit pane via websocket
--- getDataForEditPane :: Handler Html
--- getDataForEditPane = do
---   appSt <- appData <$> getYesod
---   webSockets (editPaneWebSocket appSt fgd)
---   redirect HomeR
--- 
--- editPaneWebSocket appSt = do
---   $logInfo $ "edit pane: Websocket version"
--- 
---   sourceWS $$ Data.Conduit.List.mapMaybeM
---       (handleRequest )
---     =$= sinkWSBinary
---   where
---     handleRequest :: (MonadIO m, MonadLogger m)
---       => IORef ForeGround
---       -> BS.ByteString
---       -> m (Maybe BS.ByteString)
---     handleRequest req' = do
---       case decodeStrict' req' -> do
---         Just ()
+getEditPaneR :: ForeGroundID -> Handler Html
+getEditPaneR fgID = do
+  appSt <- appData <$> getYesod
+
+  db <- liftIO $ readMVar (foreGroundDB appSt)
+
+  case Map.lookup fgID db of
+    Nothing -> redirect HomeR
+    Just fgd -> do
+      webSockets (editPaneWebSocket appSt fgd)
+      redirect HomeR
+
+editPaneWebSocket appSt fgd = do
+  $logInfo $ "edit pane: Websocket version"
+
+  sourceWS $$ Data.Conduit.List.mapMaybeM
+      (handleRequest )
+    =$= sinkWSBinary
+  where
+    handleRequest :: (MonadIO m, MonadLogger m)
+      => BSL.ByteString
+      -> m (Maybe BSL.ByteString)
+    handleRequest req' = do
+      case decode' req' of
+        Just (GetFGDefaultParams) -> do
+          fg <- liftIO $ readMVar (foreGround fgd)
+          return $ Just $ encode $ foreGroundParams fg
+        Just (GetMaskDefaultParams) -> do
+          msk <- liftIO $ readMVar (AppData.mask fgd)
+          return $ Just $ encode $ maskParams msk
+        _ -> return Nothing

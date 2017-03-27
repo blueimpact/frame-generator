@@ -18,6 +18,8 @@
 /create/mask/#ForeGroundID      CreateMaskR GET
 /edit/mask/#ForeGroundID        EditMaskR GET POST
 
+/editpane/#ForeGroundID         EditPaneR GET
+
 /create/frame/#ForeGroundID/#BackgroundImageID CreateFrameR GET
 
 /admin                          AdminR GET

@@ -28,7 +28,11 @@ instance FromJSON ClientReqEditFG
 data ClientReqEditPane =
     GetFGDefaultParams
   | GetMaskDefaultParams
+  deriving (Generic, Show)
 
+instance ToJSON ClientReqEditPane where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON ClientReqEditPane
 -- Common data
 
 data ForeGroundParams = ForeGroundParams {

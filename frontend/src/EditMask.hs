@@ -25,7 +25,6 @@ import qualified Data.Map as Map
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BSL
 
 editMaskWidget = createEditWidget
 
@@ -78,8 +77,6 @@ getEventMessage (dilate, blur, save) =
       fmap _rangeInput_input
         [dilate, blur]
      
-    enc mes = (:[]) <$> BSL.toStrict <$> encode <$> mes
-    
     saveEv = enc $ fmap (const ClientReqSaveMask) save
     editEv = enc $ tagDyn message anyEditEvent
 
