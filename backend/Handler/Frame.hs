@@ -56,12 +56,13 @@ getPreviewBackgroundImageR imgID = do
             x <- readMVar (foreGround fgd)
             return (k,x))
 
-
+      let g k = [("fgid", tshow $ unForeGroundID$ k)]
       defaultLayout [whamlet|
         <p>
           <img src=@{PngR pngID}>
         <p>Select a frame to apply
         $forall (k,fg) <- foreGrounds
+          <a href=@?{(StaticR editapp_index_html, g k)}>Edit
           <a href=@{CreateFrameR k imgID}>
             <img src=@{PngR (foreGroundPng fg)}>
 |]
