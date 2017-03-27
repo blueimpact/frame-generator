@@ -4,6 +4,7 @@ module Handler.Frame where
 
 import Import
 import AppData
+import Common
 import Utils.FrameCreator
 import Utils.Misc
 
@@ -73,18 +74,17 @@ getMakeForeGroundR patID = do
 
   case Map.lookup patID db of
     Nothing -> redirect HomeR
-    Just pat -> do
+    Just pd -> do
       let
         fgParams =
           ForeGroundParams
-            (defaultCount pat)
-            (defaultRadius pat)
+            8 -- Default count
             0 -- rotationOffset
             1.0 -- scaling
             100 -- radiusOffset %
-            (origTemplate pat)
 
-        fg = getForeGround fgParams (origPatternData pat)
+        fg = getForeGround pd
+              fgParams
 
         pngData = encodeToPng fg previewSize
 
@@ -99,7 +99,7 @@ getMakeForeGroundR patID = do
         maskMvar <- newEmptyMVar
 
         addToMVarMap (foreGroundDB appSt) ForeGroundID
-          (ForeGroundData (origPatternData pat) mvar maskMvar)
+          (ForeGroundData pd mvar maskMvar)
 
           -- <a href=@{EditForeGroundR fgID}>Edit Foreground
           -- <a href=@{CreateMaskR fgID}> Foreground Mask

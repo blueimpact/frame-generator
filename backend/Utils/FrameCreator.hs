@@ -8,6 +8,7 @@
 module Utils.FrameCreator where
 
 import AppData
+import Common
 
 import Prelude
 
@@ -32,12 +33,10 @@ import Vision.Image.Transform
 import Control.Monad.ST.Safe
 
 parsePatternData ::
-     (ByteString, Int, ForeGroundTemplate)
+     (ByteString, ForeGroundTemplate)
   -> Maybe (PatternData)
-parsePatternData (bsData, c, t) =
+parsePatternData (bsData, t) =
   PatternData <$> pd <*> pure t
-    <*> (getDefaultRadius c t <$> pd)
-    <*> pure c
   where
     pd = case loadImageEmbBS bsData of
           (Left _) -> Nothing
@@ -136,13 +135,13 @@ getMask dia width (MaskParams dilValue blurVal) =
     w = fromIntegral width
 
 getForeGround ::
-     ForeGroundParams
-  -> Diagram Rasterific
+     PatternData
+  -> ForeGroundParams
   -> Diagram Rasterific
 getForeGround
-  (ForeGroundParams num radius rotOffset scaling
-    radiusOffset tmplt)
-  img
+  (PatternData img tmplt)
+  (ForeGroundParams num rotOffset scaling
+    radiusOffset)
   = mconcat $ map snd finalList
   where
     initRot =
@@ -151,6 +150,7 @@ getForeGround
         Vertical -> -90
         Diagnol -> -45
 
+    radius = getDefaultRadius num tmplt img
     finalList = transList
 
     scaledImg = scale scaling img

@@ -12,6 +12,7 @@ import Data.ByteString
 import Diagrams.Backend.Rasterific
 import Web.PathPieces
 import qualified Codec.Picture.Types as JP
+import Common
 
 previewSize :: Int
 previewSize = 600
@@ -28,32 +29,16 @@ data ForeGroundTemplate =
 data PatternData = PatternData {
     origPatternData :: Diagram Rasterific
   , origTemplate    :: ForeGroundTemplate
-  , defaultRadius   :: Double
-  , defaultCount    :: Int
   --, previewPng      :: Maybe PngID
 }
 
 newtype ForeGroundID = ForeGroundID { unForeGroundID :: Int}
   deriving (Read, PathPiece, Show, Eq, Ord)
 
-data ForeGroundParams = ForeGroundParams {
-    patternCount    :: Int
-  , radius          :: Double
-  , rotationOffset  :: Double -- Deg
-  , scaling         :: Double -- 1.0 - default
-  , radiusOffset    :: Double -- %
-  , template        :: ForeGroundTemplate
-}
-
 data ForeGround = ForeGround {
     foreGroundDia   :: Diagram Rasterific
   , foreGroundParams :: ForeGroundParams
   , foreGroundPng   :: PngID
-}
-
-data MaskParams = MaskParams {
-    dilateValue     :: Int
-  , blurValue       :: Int
 }
 
 data Mask = Mask {
@@ -62,7 +47,7 @@ data Mask = Mask {
 }
 
 data ForeGroundData = ForeGroundData {
-    pattern         :: Diagram Rasterific
+    patternData     :: PatternData
   , foreGround      :: MVar ForeGround
   , mask            :: MVar Mask
 }

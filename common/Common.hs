@@ -6,17 +6,11 @@ module Common where
 import GHC.Generics
 import Data.Aeson
 
+-- Client side requests
 -- Edit ForeGround, Client Request Data
-data ClientReqEditFG = ClientReqEditFG {
-    clientReqEditFGCount      :: Int
-  , clientReqEditFGRotation   :: Double -- In Degrees
-  , clientReqEditFGScaling    :: Double
-  , clientReqEditFGRadiusOff  :: Double -- %age
-} 
-  | ClientReqEditMask {
-    clientReqEditMaskDilate   :: Int
-  , clientReqEditMaskBlur     :: Int
-}
+data ClientReqEditFG =
+    ClientReqEditFG ForeGroundParams
+  | ClientReqEditMask MaskParams
   | ClientReqSaveFG
   | ClientReqSaveMask
   deriving (Generic, Show)
@@ -30,3 +24,33 @@ instance ToJSON ClientReqEditFG where
 
 instance FromJSON ClientReqEditFG
     -- No need to provide a parseJSON implementation.
+
+data ClientReqEditPane =
+    GetFGDefaultParams
+  | GetMaskDefaultParams
+
+-- Common data
+
+data ForeGroundParams = ForeGroundParams {
+    patternCount    :: Int
+  , rotationOffset  :: Double -- Deg
+  , scaling         :: Double -- 1.0 - default
+  , radiusOffset    :: Double -- %
+}
+  deriving (Generic, Show, Eq)
+
+data MaskParams = MaskParams {
+    dilateValue     :: Int
+  , blurValue       :: Int
+}
+  deriving (Generic, Show, Eq)
+
+instance ToJSON ForeGroundParams where
+    toEncoding = genericToEncoding defaultOptions
+
+instance FromJSON ForeGroundParams
+
+instance ToJSON MaskParams where
+    toEncoding = genericToEncoding defaultOptions
+
+instance FromJSON MaskParams 

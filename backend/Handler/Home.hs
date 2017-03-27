@@ -20,11 +20,10 @@ import Utils.Misc
 -- Store the pattern in memory App
 
 data UploadPatternForm = UploadPatternForm
-  FileInfo Int ForeGroundTemplate
+  FileInfo ForeGroundTemplate
 
 patternForm = renderDivs $ UploadPatternForm
   <$> areq fileField "Pattern File" Nothing
-  <*> areq intField "Count" (Just 8)
   <*> areq (radioField optionsEnum) "Template"
         (Just Horizontal)
 
@@ -57,12 +56,12 @@ postUploadPatternR = do
   $logDebug "Trying to read uploaded pattern"
 
   fd <- case result of
-    FormSuccess (UploadPatternForm f c t) -> do
+    FormSuccess (UploadPatternForm f t) -> do
       -- Get all file data
       d <- runConduit
         ((fileSource f) =$= (Data.Conduit.List.fold (<>) ""))
 
-      return $ Just (d,c,t)
+      return $ Just (d,t)
     _ -> return Nothing
 
   let patData = join $ parsePatternData <$> fd

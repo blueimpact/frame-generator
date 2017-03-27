@@ -101,7 +101,7 @@ getEventMessage (scale, count, rotate, radius, save) =
     saveEv = enc $ fmap (const ClientReqSaveFG) save
     editEv = enc $ tagDyn message anyEditEvent
 
-    message = (ClientReqEditFG
+    message = ClientReqEditFG <$> (ForeGroundParams
       <$> (ceiling <$> _rangeInput_value count)
       <*> ftod (_rangeInput_value rotate)
       <*> ftod (_rangeInput_value scale)

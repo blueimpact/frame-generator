@@ -35,7 +35,8 @@ getEditForeGroundR fgID = do
       newParams <- getNewForeGroundParams (foreGroundParams fg)
 
       let
-        newFgDia = getForeGround newParams (pattern fgd)
+        newFgDia = getForeGround (patternData fgd)
+          newParams
 
         pngData = encodeToPng newFgDia previewSize
 
@@ -90,16 +91,13 @@ editForeGroundWebSocketWidget appSt fgd = do
 
           return Nothing
 
-        Just req@(ClientReqEditFG _ _ _ _) -> do
+        Just (ClientReqEditFG fgparam) -> do
           $logInfo $ "edit foreground: Valid request"
           fg <- liftIO $ readMVar (foreGround fgd)
-          let fgparam = (foreGroundParams fg)
-                { scaling = clientReqEditFGScaling req
-                , patternCount = clientReqEditFGCount req
-                , rotationOffset = clientReqEditFGRotation req
-                , radiusOffset = clientReqEditFGRadiusOff req}
-              newFG = getForeGround fgparam
-                        (pattern fgd)
+          let 
+              newFG = getForeGround 
+                        (patternData fgd)
+                        fgparam
 
               pngData = encodeToPng newFG previewSize
 
@@ -120,11 +118,9 @@ getNewForeGroundParams fgParams = do
   let
     newFgParams = ForeGroundParams
       (getParamFromMaybe (patternCount   fgParams) patCount)
-      (radius         fgParams)
       (getParamFromMaybe (rotationOffset fgParams) rotOff)
       (getParamFromMaybe (scaling        fgParams) scale)
       (getParamFromMaybe (radiusOffset   fgParams) radOff)
-      (template       fgParams)
   return newFgParams
 
 getEditMaskR :: ForeGroundID -> Handler Html
@@ -202,15 +198,11 @@ editMaskWebSocketWidget appSt fgd = do
             putMVar (AppData.mask fgd) msk
           return Nothing
 
-        Just req@(ClientReqEditMask _ _) -> do
+        Just (ClientReqEditMask maskParams) -> do
           $logInfo $ "edit mask: Valid request"
-          -- Avoid this readMVar
           fg <- liftIO $ readMVar (foreGround fgd)
 
-          let maskParams = MaskParams
-                (clientReqEditMaskDilate req)
-                (clientReqEditMaskBlur req)
-
+          let
               (_,_,subt,msk) =
                 getMask (foreGroundDia fg)
                   previewSize maskParams
@@ -220,3 +212,24 @@ editMaskWebSocketWidget appSt fgd = do
 
         _ -> return Nothing
 
+-- Serve data to edit pane via websocket
+-- getDataForEditPane :: Handler Html
+-- getDataForEditPane = do
+--   appSt <- appData <$> getYesod
+--   webSockets (editPaneWebSocket appSt fgd)
+--   redirect HomeR
+-- 
+-- editPaneWebSocket appSt = do
+--   $logInfo $ "edit pane: Websocket version"
+-- 
+--   sourceWS $$ Data.Conduit.List.mapMaybeM
+--       (handleRequest )
+--     =$= sinkWSBinary
+--   where
+--     handleRequest :: (MonadIO m, MonadLogger m)
+--       => IORef ForeGround
+--       -> BS.ByteString
+--       -> m (Maybe BS.ByteString)
+--     handleRequest req' = do
+--       case decodeStrict' req' -> do
+--         Just ()

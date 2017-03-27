@@ -83,6 +83,6 @@ getEventMessage (dilate, blur, save) =
     saveEv = enc $ fmap (const ClientReqSaveMask) save
     editEv = enc $ tagDyn message anyEditEvent
 
-    message = ClientReqEditMask
+    message = ClientReqEditMask <$> (MaskParams
       <$> (ceiling <$> _rangeInput_value dilate)
-      <*> (ceiling <$> _rangeInput_value blur)
+      <*> (ceiling <$> _rangeInput_value blur))
