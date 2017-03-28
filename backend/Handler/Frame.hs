@@ -62,7 +62,7 @@ getPreviewBackgroundImageR imgID = do
           <img src=@{PngR pngID}>
         <p>Select a frame to apply
         $forall (k,fg) <- foreGrounds
-          <a href=@?{(StaticR editapp_index_html, g k)}>Edit
+          <a href=@?{(StaticR editapp_index_html, g k)}>Edit Frame
           <a href=@{CreateFrameR k imgID}>
             <img src=@{PngR (foreGroundPng fg)}>
 |]

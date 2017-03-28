@@ -23,31 +23,36 @@ data UploadPatternForm = UploadPatternForm
   FileInfo ForeGroundTemplate
 
 patternForm = renderDivs $ UploadPatternForm
-  <$> areq fileField "Pattern File" Nothing
+  <$> areq fileField "Pattern File " Nothing
   <*> areq (radioField optionsEnum) "Template"
         (Just Horizontal)
 
 getHomeR :: Handler Html
 getHomeR = do
     defaultLayout [whamlet|
-      <p>Welcome!
+      <h1>Welcome!
       <p>
-        <a href=@{UploadPatternR}>Upload Pattern
-        Images with only alpha layers tested!
+        First upload a pattern to create a ForeGround, next upload an image
+        and select a frame to apply around it.
+        No files are currently stored on this server, so please download all the final images.
+      <p>
+        <a href=@{UploadPatternR} target=_blank>Upload Pattern
+        Images with only alpha layers work well!
+        After successful upload you will be redirected to the editing page.
 
       <p>
         <a href=@{UploadBackgroundImageR}>Upload Image
-        This can be anything, it will be cropped as a square left most side.
+        This can be anything, it will be cropped as a square and centered.
 |]
 
 getUploadPatternR :: Handler Html
 getUploadPatternR = do
     ((_, widget), enctype) <- runFormPost patternForm
-    defaultLayout [whamlet|$newline never
+    defaultLayout [whamlet|
       <form method=post enctype=#{enctype}>
         ^{widget}
         <p>
-        <input type=submit>Submit
+        <input type=submit>
 |]
 
 postUploadPatternR :: Handler Html
@@ -93,11 +98,11 @@ bgImageForm = renderDivs $ UploadBackgroundImageForm
 getUploadBackgroundImageR :: Handler Html
 getUploadBackgroundImageR = do
     ((_, widget), enctype) <- runFormPost bgImageForm
-    defaultLayout [whamlet|$newline never
+    defaultLayout [whamlet|
       <form method=post enctype=#{enctype}>
         ^{widget}
         <p>
-        <input type=submit>Submit
+        <input type=submit>
 |]
 
 postUploadBackgroundImageR :: Handler Html
