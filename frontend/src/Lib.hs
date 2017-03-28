@@ -79,8 +79,9 @@ editPaneTop = do
 
 editWidgets fullHost fgID fgParam = do
 
-  el "div" $ do
+  el "div" $
     text "Edit Foreground and Mask"
+  el "div" $
     text "Double click the numeric value next to slider to edit it"
   el "table" $ do
     el "tr" $ do
