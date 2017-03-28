@@ -37,7 +37,7 @@ rangeInputWidgetWithTextEditAndReset ::
   -> Double                 -- Initial value
   -> (Float, Float, Float)  --
   -> Event t ()             -- Update reset value, when saving
-  -> m (RangeInput t, Event t ()) -- Changed value
+  -> m (RangeInput t)
 
 rangeInputWidgetWithTextEditAndReset
   label initVal' (min, max, step) resetUpd = do
@@ -52,7 +52,6 @@ rangeInputWidgetWithTextEditAndReset
 
         setValEv = leftmost [setValEv1, setValEv2]
 
-        evChange = leftmost [r, const () <$> e]
     resetValDyn <- holdDyn initVal
       (tagPromptlyDyn (_rangeInput_value ri) resetUpd)
 
@@ -70,41 +69,36 @@ rangeInputWidgetWithTextEditAndReset
         (constDyn $ ("min" =: tshow min) <> ("max" =: tshow max)
           <> ("step" =: tshow step))
 
-
-  return (ri, evChange)
+  return ri
 
 tshow :: (Show a) => a -> Text
 tshow v = T.pack $ show v
 
 createEditWidget url idTxt fgParam = do
 
-  el "div" $ text ("Editing ForeGroundID: " <> idTxt)
-
   inputs <- el "table" $ do
     rec
       let
         updateResetEv = save
 
-      (s,e1) <- rangeInputWidgetWithTextEditAndReset
+      s <- rangeInputWidgetWithTextEditAndReset
         "Scale:" (scaling fgParam)
           (0.1, 2.0, 0.05) updateResetEv
 
-      (c,e2) <- rangeInputWidgetWithTextEditAndReset
+      c <- rangeInputWidgetWithTextEditAndReset
         "Count:" (fromIntegral (patternCount fgParam))
           (2, 128, 1) updateResetEv
 
-      (ro,e3) <- rangeInputWidgetWithTextEditAndReset
+      ro <- rangeInputWidgetWithTextEditAndReset
         "Rotation:" (rotationOffset fgParam)
           (-180, 180, 1) updateResetEv
 
-      (ra,e4) <- rangeInputWidgetWithTextEditAndReset
+      ra <- rangeInputWidgetWithTextEditAndReset
         "Radius:" (radiusOffset fgParam)
           (1, 200, 1) updateResetEv
 
-      let valUpdate = leftmost [e1,e2,e3,e4]
-
       save <- button "Save ForeGround"
-    return (s,c,ro,ra, save, valUpdate)
+    return (s,c,ro,ra,save)
 
   let eventMessage = getEventMessage inputs
 
@@ -124,23 +118,37 @@ createEditWidget url idTxt fgParam = do
 
 getEventMessage :: (Reflex t) =>
      (RangeInput t, RangeInput t, RangeInput t, RangeInput t
-      , Event t (), Event t ())
+      , Event t ())
   -> Event t [ByteString]
-getEventMessage (scale, count, rotate, radius, save, valUpdate) =
+getEventMessage (scale, count, rotate, radius, save) =
   leftmost $ [saveEv, editEv]
   where
-    anyEditEvent = const () <$> (leftmost $
-      fmap _rangeInput_input
-        [scale, count, rotate, radius])
+    saveEv = enc $ const ClientReqSaveFG <$> save
+    editEv = enc $ ClientReqEditFG <$> anyEditEvent
 
-    saveEv = enc $ fmap (const ClientReqSaveFG) save
-    editEv = enc $ tagPromptlyDyn message
-      (leftmost [anyEditEvent, valUpdate])
+    anyEditEvent = leftmost [ev1, ev2, ev3, ev4]
 
-    message = ClientReqEditFG <$> (ForeGroundParams
+    ev1 = attachPromptlyDynWith f params sEv
+      where f p x = p { scaling = x}
+
+    ev2 = attachPromptlyDynWith f params cEv
+      where f p x = p { patternCount = x}
+
+    ev3 = attachPromptlyDynWith f params roEv
+      where f p x = p { rotationOffset = x}
+
+    ev4 = attachPromptlyDynWith f params raEv
+      where f p x = p { radiusOffset = x}
+
+    sEv  = ftod $ updated (_rangeInput_value scale)
+    cEv  = ceiling <$> updated (_rangeInput_value count)
+    roEv = ftod $ updated (_rangeInput_value rotate)
+    raEv = ftod $ updated (_rangeInput_value radius)
+
+    params = ForeGroundParams
       <$> (ceiling <$> _rangeInput_value count)
       <*> ftod (_rangeInput_value rotate)
       <*> ftod (_rangeInput_value scale)
-      <*> ftod (_rangeInput_value radius))
+      <*> ftod (_rangeInput_value radius)
 
     ftod f = fmap realToFrac f
