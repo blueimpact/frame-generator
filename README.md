@@ -17,9 +17,12 @@ Features
   The image will be nicely cut around the edges so as to fit the frame.
   User can edit the cut related parameters by modifying the mask used for
   cutting. 
-  The following parameters can be used modified for mask
-  a. Dilate - This alters the spacing between frame and image.
-  b. Blur - This adds a blurred transparency at the cut to make it smooth.
+  
+    The following parameters can be used modified for mask
+  
+    a. Dilate - This alters the spacing between frame and image.
+  
+    b. Blur - This adds a blurred transparency at the cut to make it smooth.
 
 Usage
 1. Upload the pattern
