@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-8.5
+resolver: lts-8.11
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -38,8 +38,8 @@ resolver: lts-8.5
 packages:
 - '.'
 - '../common'
-- '../../../diagram/diagrams-lib'
-- '../../../diagram/diagrams-rasterific'
+- 'diagrams-lib'
+- 'diagrams-rasterific'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:

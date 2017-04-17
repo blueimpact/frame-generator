@@ -3,6 +3,7 @@ static/tmp/
 static/combined/
 config/client_session_key.aes
 *.hi
+*.js
 *.o
 *.sqlite3
 *.sqlite3-shm

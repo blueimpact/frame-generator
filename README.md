@@ -13,7 +13,7 @@ Features
 2. Once the frame is ready the user can put this frame around an image.
   The image will be nicely cut around the edges so as to fit the frame.
   User can edit the cut related parameters by modifying the mask used for
-  cutting. 
+  cutting.
   The following parameters can be used modified for mask
   a. Dilate - This alters the spacing between frame and image.
   b. Blur - This adds a blurred transparency at the cut to make it smooth.
@@ -26,22 +26,26 @@ Usage
 
 Installation from source
 
-1. Backend
-Currently this has a dependency on a modified diagrams-lib. With new version of
-diagrams-lib (>1.4), this should be buildable from stack repo package.
-Assuming this dependency is taken care of do...
-```
-cd backend; stack build;
-```
+1. Frontend
 
-2. Frontend
 First create the nix-shell
+
 ```
 git clone https://github.com/reflex-frp/reflex-platform.git;
 ./reflex-platform/workon ghcjs ./frontend
 ```
 
-Then do this inside the nix-shell
+Then
+
 ```
 cd frontend; cabal configure --ghcjs && cabal build;
+```
+
+2. Backend
+
+```
+cd backend;
+./cp.sh; # Copy Front-end js files
+stack build;
+stack exec frame-generator-backend;
 ```

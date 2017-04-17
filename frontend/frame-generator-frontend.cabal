@@ -1,12 +1,9 @@
 name: frame-generator-frontend
-version: 0.0.0
+version: 0.1.0
 cabal-version: >=1.10
 build-type: Simple
 copyright: 2017 Divam Narula <dfordivam@gmail.com>
 maintainer: Divam Narula <dfordivam@gmail.com>
-synopsis: TODO
-description: TODO
-category: TODO
 author: Divam Narula <dfordivam@gmail.com>
 extra-source-files:
   README.md
@@ -24,6 +21,7 @@ library
   other-modules:
       EditForeGround
       Utils
+      EditMask
 
   build-depends:
       base
@@ -34,7 +32,7 @@ library
     , containers == 0.5.*
     , file-embed
     , bytestring
-    , frame-generator-common
+    , frame-generator-common >= 0.1 && < 0.2
     , aeson
     , reflex-dom-contrib
     , uri-bytestring

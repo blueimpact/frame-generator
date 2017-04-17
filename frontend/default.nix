@@ -35,7 +35,7 @@ let f = { mkDerivation, base, bytestring, containers, file-embed
 }:
 mkDerivation {
   pname = "frame-generator-frontend";
-  version = "0.0.0";
+  version = "0.1.0";
   src = ./.;
   isLibrary = true;
   isExecutable = true;
@@ -49,11 +49,11 @@ mkDerivation {
 };
 
   fg = (import ../common/default.nix) {inherit mkDerivation base aeson stdenv;};
-  rc = (import ~/repos/reflex/reflex-dom-contrib) {inherit mkDerivation aeson base64-bytestring bifunctors 
-          data-default ghc ghcjs-base ghcjs-dom http-types lens mtl random readable reflex 
+  rc = (import ./reflex-dom-contrib) {inherit mkDerivation aeson base64-bytestring bifunctors
+          data-default ghc ghcjs-base ghcjs-dom http-types lens mtl random readable reflex
           reflex-dom safe semigroups string-conv text these time transformers uri-bytestring webkitgtk3-javascriptcore; };
 
 in f {inherit mkDerivation base bytestring containers file-embed ghcjs-dom
-      reflex reflex-dom stdenv text uri-bytestring lens; 
+      reflex reflex-dom stdenv text uri-bytestring lens;
       frame-generator-common = fg;
       reflex-dom-contrib = rc;}

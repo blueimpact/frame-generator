@@ -1,0 +1,9 @@
+[submodule "backend/diagrams-lib"]
+	path = backend/diagrams-lib
+	url = git@github.com:diagrams/diagrams-lib.git
+[submodule "backend/diagrams-rasterific"]
+	path = backend/diagrams-rasterific
+	url = git@github.com:diagrams/diagrams-rasterific.git
+[submodule "frontend/reflex-dom-contrib"]
+	path = frontend/reflex-dom-contrib
+	url = git@github.com:reflex-frp/reflex-dom-contrib.git
