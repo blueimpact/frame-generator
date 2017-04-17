@@ -36,6 +36,7 @@ import Handler.Home
 import Handler.Frame
 import Handler.EditFrame
 import Handler.Admin
+import Handler.AppWebSocket
 
 import AppData
 import qualified Data.Map as Map

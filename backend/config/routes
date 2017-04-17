@@ -25,5 +25,7 @@
 /admin                          AdminR GET
 /admin/reset                    AdminResetR GET
 
+/websocket                      AppWebSocket GET
+
 -- Host all output images on this route
 /getpng/#PngID                  PngR GET

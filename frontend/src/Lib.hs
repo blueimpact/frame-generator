@@ -13,6 +13,7 @@ import Reflex.Dom
 import EditForeGround
 import EditMask
 import Utils
+import PatternBrowser
 
 import qualified Data.Map as Map
 
@@ -24,16 +25,43 @@ import qualified Data.Text.Encoding        as T
 import Data.Monoid
 import Data.Aeson
 import Data.Maybe
+import Control.Monad.IO.Class
 
 import Common
+import qualified Message
 
-main = mainWidgetWithCss  $(embedFile "src/style.css") editPaneTop
+main = mainWidgetWithCss  $(embedFile "src/style.css")
+  mainWidgetTop
 
-
--- Do some not so cool stuff
-editPaneTop :: (MonadWidget t m
+mainWidgetTop :: (MonadWidget t m
    , PerformEvent t m) => m ()
-editPaneTop = do
+mainWidgetTop = do
+  fullHost <- getFullHostUrl
+
+  rec
+    let
+      url = "ws://" <> fullHost <> "/websocket"
+      wsSend = req1
+
+      getResponse =
+        fforMaybe (_webSocket_recv ws)
+        (\req -> case decodeStrict req of
+          Just c -> Just c
+          _ -> Nothing)
+
+      -- patternList :: (Reflex t) => Event t Message.Response
+      patternList = getResponse
+
+    ws <- webSocket url $ def &
+      webSocketConfig_send .~ wsSend
+
+    req1 <- patternBrowseWidget fullHost patternList
+
+
+  return ()
+
+getFullHostUrl :: (HasWebView m, MonadIO m) => m T.Text
+getFullHostUrl = do
   uri <- C.getURI
 
   let
@@ -54,41 +82,20 @@ editPaneTop = do
     query = (uri ^. U.queryL . U.queryPairsL)
 
     fgID = T.decodeUtf8 $ snd (head query)
+  return fullHost
 
-  -- Reset all button,
-  -- fetch default value and pass to the edit widgets
+-- editWidgets fullHost fgID fgParam = do
 
-  -- Main edit pane web socket
-  -- Get the ForeGroundParams from server
-  postBuild <- getPostBuild
-  let webSocketSend = enc $ const (GetFGDefaultParams) <$> postBuild
-  ws <- webSocket ("ws://" <> fullHost <> "/editpane/" <> fgID) $ def &
-    webSocketConfig_send .~ webSocketSend
-
-  let maybeParams = decodeStrict' <$> _webSocket_recv ws
-
-      defParams = ForeGroundParams 8 0 1.0 100
-      params =
-        (fromMaybe defParams) <$> maybeParams
-
-      editWidgetEv = editWidgets fullHost fgID <$> params
-
-
-  widgetHold (text "Loading...") editWidgetEv
-  return ()
-
-editWidgets fullHost fgID fgParam = do
-
-  el "div" $
-    text "Edit Foreground and Mask"
-  el "div" $
-    text "Double click the numeric value next to slider to edit it"
-  el "table" $ do
-    el "tr" $ do
-      el "th" $ text "Edit ForeGround"
-      el "th" $ text "Edit Mask"
-    el "tr" $ do
-      el "td" $
-        editForegroundWidget fullHost fgID fgParam
-      el "td" $
-        editMaskWidget fullHost fgID
+--   el "div" $
+--     text "Edit Foreground and Mask"
+--   el "div" $
+--     text "Double click the numeric value next to slider to edit it"
+--   el "table" $ do
+--     el "tr" $ do
+--       el "th" $ text "Edit ForeGround"
+--       el "th" $ text "Edit Mask"
+--     el "tr" $ do
+--       el "td" $
+--         editForegroundWidget fullHost fgID fgParam
+--       el "td" $
+--         editMaskWidget fullHost fgID
