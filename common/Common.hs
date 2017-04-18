@@ -5,35 +5,16 @@ module Common where
 
 import GHC.Generics
 import Data.Aeson
+import Data.Text (Text)
 
--- Client side requests
--- Edit ForeGround, Client Request Data
-data ClientReqEditFG =
-    ClientReqEditFG ForeGroundParams
-  | ClientReqEditMask MaskParams
-  | ClientReqSaveFG
-  | ClientReqSaveMask
-  deriving (Generic, Show)
-
-instance ToJSON ClientReqEditFG where
-    -- No need to provide a toJSON implementation.
-
-    -- For efficiency, we write a simple toEncoding implementation, as
-    -- the default version uses toJSON.
-    toEncoding = genericToEncoding defaultOptions
-
-instance FromJSON ClientReqEditFG
-    -- No need to provide a parseJSON implementation.
-
-data ClientReqEditPane =
-    GetFGDefaultParams
-  | GetMaskDefaultParams
-  deriving (Generic, Show)
-
-instance ToJSON ClientReqEditPane where
-    toEncoding = genericToEncoding defaultOptions
-instance FromJSON ClientReqEditPane
 -- Common data
+
+type PatternName = (Text, Text)
+type FileName = Text
+type FgtId = Int
+type FgId = Int
+type LayerId = Int
+type FgtData = [(PatternName, ForeGroundParams)]
 
 data ForeGroundParams = ForeGroundParams {
     patternCount    :: Int
@@ -49,6 +30,12 @@ data MaskParams = MaskParams {
 }
   deriving (Generic, Show, Eq)
 
+-- Values
+fgtemplatesDir = "/static/fgtemplates/"
+patternsDir = "/static/patterns/"
+foregroundDir = "/static/foregrounds/"
+previewDir = "/static/preview/"
+
 instance ToJSON ForeGroundParams where
     toEncoding = genericToEncoding defaultOptions
 
@@ -57,4 +44,4 @@ instance FromJSON ForeGroundParams
 instance ToJSON MaskParams where
     toEncoding = genericToEncoding defaultOptions
 
-instance FromJSON MaskParams 
+instance FromJSON MaskParams

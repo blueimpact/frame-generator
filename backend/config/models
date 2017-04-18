@@ -9,5 +9,15 @@ Email
     userId UserId Maybe
     verkey Text Maybe
     UniqueEmail email
- 
+
+ForeGroundTemplate
+    layers FgtData
+    -- pngPreview FileName -- fgtemplates/fgtid.png
+    deriving Show
+
+ForeGround
+    template ForeGroundTemplateId
+    layers [PatternName]
+    pngPreview FileName -- grp1_grp2/fgtid_pat1_pat2.png
+    maskFile FileName   -- grp1_grp2/fgtid_pat1_pat2_mask.png
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

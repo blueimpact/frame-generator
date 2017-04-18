@@ -41,7 +41,7 @@ mainWidgetTop = do
   rec
     let
       url = "ws://" <> fullHost <> "/websocket"
-      wsSend = req1
+      wsSend = leftmost [req1, req2, req3, req4]
 
       getResponse =
         fforMaybe (_webSocket_recv ws)
@@ -50,13 +50,29 @@ mainWidgetTop = do
           _ -> Nothing)
 
       -- patternList :: (Reflex t) => Event t Message.Response
-      patternList = getResponse
+      patternList = (\(PatternList lst) -> lst) <$> getResponse
+
+      fgtList = (\(ForeGroundTemplateList lst) -> lst) <$> getResponse
+
+    patListDyn <- holdDyn [] patternList
+    fgtListDyn <- holdDyn [] fgtList
 
     ws <- webSocket url $ def &
       webSocketConfig_send .~ wsSend
 
     req1 <- patternBrowseWidget fullHost patternList
 
+    req2 <- editFGTemplateWidget fullHost getResponse getResponse
+
+    req3 <- buttonE "Get FGT List" GetForeGroundTemplateList
+
+    req4 <- foreGroundTemplateBrowseWidget fullHost fgtList
+
+    req5 <- buttonE "Get FG List" GetForeGroundList
+
+    req6 <- foreGroundBrowseWidget fullHost getResponse
+
+    req7 <- previewWidget fullHost patListDyn fgtListDyn getResponse
 
   return ()
 

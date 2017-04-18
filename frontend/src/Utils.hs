@@ -5,7 +5,7 @@
 -- {-# LANGUAGE FlexibleContexts #-}
 -- {-# LANGUAGE GADTs #-}
 
-module Utils 
+module Utils
   (createObjectURL, enc)
   where
 
@@ -45,3 +45,10 @@ createObjectURL bs = do
       f b
   url <- run createObjectURL_ bs
   return $ T.pack $ JS.fromJSString $ JS.pFromJSVal url
+
+buttonE txt c = do
+  ev <- button txt
+  return (c <$ ev)
+
+img url = elAttr "img"
+  ("src" =: url) blank
