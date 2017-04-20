@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 module Handler.AppWebSocket where
 
 import Import
@@ -41,7 +40,7 @@ appWebSocketServer appSt = do
       (handleRequest )
     =$= sinkWSBinary
   where
-    mylift :: Handler a -> _ a
+    mylift :: Handler a -> ReaderT r (HandlerT App IO) a
     mylift a = lift $ a
     -- handleRequest :: (MonadIO m, MonadLogger m)
     --   => BSL.ByteString
