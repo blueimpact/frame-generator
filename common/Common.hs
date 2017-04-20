@@ -6,15 +6,25 @@ module Common where
 import GHC.Generics
 import Data.Aeson
 import Data.Text (Text)
+import Data.List.NonEmpty (NonEmpty)
+import Data.Int
 
 -- Common data
 
 type PatternName = (Text, Text)
 type FileName = Text
-type FgtId = Int
-type FgId = Int
+type FgtId = Int64
+type FgId = Int64
 type LayerId = Int
-type FgtData = [(PatternName, ForeGroundParams)]
+
+data PatternShape = Horizontal | Vertical | Diagnol
+data ForeGroundTemplateData = ForeGroundTemplateData
+  (NonEmpty (PatternName, ForeGroundParams))
+  deriving (Generic, Show)
+
+data ForeGroundData = ForeGroundData FgtId
+  (NonEmpty PatternName)
+  deriving (Generic, Show)
 
 data ForeGroundParams = ForeGroundParams {
     patternCount    :: Int
@@ -35,6 +45,16 @@ fgtemplatesDir = "/static/fgtemplates/"
 patternsDir = "/static/patterns/"
 foregroundDir = "/static/foregrounds/"
 previewDir = "/static/preview/"
+
+instance ToJSON ForeGroundData where
+    toEncoding = genericToEncoding defaultOptions
+
+instance FromJSON ForeGroundData
+
+instance ToJSON ForeGroundTemplateData where
+    toEncoding = genericToEncoding defaultOptions
+
+instance FromJSON ForeGroundTemplateData
 
 instance ToJSON ForeGroundParams where
     toEncoding = genericToEncoding defaultOptions

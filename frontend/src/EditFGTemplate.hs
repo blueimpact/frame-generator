@@ -16,55 +16,63 @@ import Data.Monoid
 import Data.Aeson
 import Data.Maybe
 import Control.Monad
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NE
 
 import Message
 
 -- type FgtData = [(PatternName, ForeGroundParams)]
-editFGTemplateWidget fullHost newFGTemplEv fgtDataEv = do
+editFGTemplateWidget fullHost newFGTemplEv fgtDataEv' = do
 
   let
-    getImgUrl grp file = "http://" <> fullHost
-      <> "/static/patterns/" <> grp <> "/" <> file
+    fgtIdEv = (\(NewForeGroundTemplate fgtId) -> fdtId) <$> newFGTemplEv
 
-    fdtIdEv = (\(NewForeGroundTemplate fgtId) -> fdtId) <$> newFGTemplEv
+    fgtDataEv = (\(ForeGroundTemplateData fgtId fgtData) ->
+                   (fgtId, fgtData)) <$> fgtDataEv'
 
-    editFGTEv = EditForeGroundTemplate <$> fdtIdEv
+    editFGTEv = EditForeGroundTemplate <$> fgtIdEv
 
-    f layers = do
+    f d = do
       el "div" $ do
         el "table" $ do
-          renderEditWidget fullHost layers
+          renderEditWidget fullHost d
 
   evDyn <- widgetHold (do {return [];}) (f <$> fgtDataEv)
 
-  let evClick = switchPromptlyDyn (leftmost <$> evDyn)
+  let evClick = leftmost $
+        map switchPromptlyDyn evDyn
 
   ev <- getPostBuild
   return $ enc $ leftmost [editFGTEv]
 
 
 
-renderEditWidget fullHost layers = do
+renderEditWidget fullHost pats (fgtId, fgtData) = do
   rec
     let eventMessage = enc $ leftmost [ev1,ev2]
 
+        idTxt = tshow fgtId
     ws <- webSocket ("ws://" <> fullHost <> "/edit/foreground/" <> idTxt) $
       def & webSocketConfig_send .~ eventMessage
 
+      ev2 = SaveFG <$ save
+
+    reset <- button "Reset All"
+    -- Race in save signal, both WS fire
+    save <- button "Save"
 
     -- Controls
     ev1 <- el "tr" $ do
-      let l = zip [1..] layers
+      let l = NE.zip (NE.fromList [1..]) fgtData
       editMsgs <- forM l layerControls
       -- Select pattern and add a layer
       let miniPatternBrowser = return never
-      addLayerMsg <- miniPatternBrowser
+      addLayerMsg <- miniPatternBrowser pats
 
-      return $ leftmost $ addLayerMsg:editMsgs
+      return $ leftmost $ addLayerMsg: (NE.toList editMsgs)
 
     -- Preview
-    ev2 <- el "tr" $ el "td" $ do
-      save <- button "Save ForeGround"
+    el "tr" $ el "td" $ do
       let
         myImgUrl =
           ffor (_webSocket_recv ws)
@@ -74,9 +82,23 @@ renderEditWidget fullHost layers = do
       let dynAttr = ffor urlDyn (\u -> ("src" =: u))
       el "div" $ elDynAttr "img" dynAttr $ return ()
 
-      return (SaveFG <$ save)
+    editFGTEv = EditForeGroundTemplate fgtId <$
+      (leftmost [save,reset])
+  return editFGTEv
 
-  return ()
+miniPatternBrowser pats = do
+  let
+    f (groupName, files) = do
+      el "ul" $ do
+        forM files
+          (\file ->
+              el' "li" $ do
+                e <- img $ getImgUrl groupName file
+                return $ AddLayer (groupName, file)
+                  <$ domEvent Click e
+          )
+  dynList <- dyn $ f <$> pats
+  return $ switchPromptlyDyn $ leftmost <$> dynList
 
 layerControls (layerId, (patternName, fgParam)) = do
   el "td" $

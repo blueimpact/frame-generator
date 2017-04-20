@@ -20,12 +20,9 @@ library
                      Model
                      Settings
                      Settings.StaticFiles
-                     AppData
-                     Handler.Home
-                     Handler.Frame
-                     Handler.EditFrame
                      Handler.Admin
                      Handler.AppWebSocket
+                     Handler.EditFGTemplate
                      Utils.FrameCreator
                      Utils.Misc
                      Utils.PatternManage
@@ -107,6 +104,8 @@ library
                  , path-pieces
                  , yesod-websockets
                  , filepath
+                 , lens
+                 , ghc-prim
                  , frame-generator-common      >= 0.1 && < 0.2
 
 executable         frame-generator-backend

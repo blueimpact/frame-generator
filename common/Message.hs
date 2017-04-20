@@ -21,8 +21,8 @@ data Request =
   | EditForeGroundTemplate FgtId
   | CloneForeGroundTemplate FgtId
   | DeleteForeGroundTemplate FgtId
-  | PreviewForeGroundTemplate FgtId [PatternName]
-  | ApplyForeGroundTemplate FgtId [PatternName]
+  | PreviewForeGroundTemplate FgtId [NonEmpty PatternName]
+  | ApplyForeGroundTemplate FgtId (NonEmpty PatternName)
   | GetForeGroundList
   | EditForeGround FgId
   | DeleteForeGround FgId
@@ -34,9 +34,10 @@ data PatternListT
 data ForeGroundTemplateListT
 data NewForeGroundTemplateT
 data ForeGroundTemplateDataT
+data ForeGroundListPreviewT
 data ForeGroundListT
 data NewForeGroundT
-data ForeGroundDataT
+data ForeGroundDataResT
 data DownloadForeGroundPngLinkT
 
 data family Response a
@@ -53,11 +54,11 @@ data instance Response NewForeGroundTemplateT =
   deriving (Generic, Show)
 
 data instance Response ForeGroundTemplateDataT =
-  ForeGroundTemplateData FgtData
+  ForeGroundTemplateDataRes FgtId ForeGroundTemplateData
   deriving (Generic, Show)
 
 data instance Response ForeGroundListPreviewT =
-  ForeGroundListPreview [(FgtId, [PatternName], FileName)]
+  ForeGroundListPreview [(FgtId, NonEmpty PatternName, FileName)]
   deriving (Generic, Show)
 
 data instance Response ForeGroundListT =
@@ -68,8 +69,8 @@ data instance Response NewForeGroundT =
   NewForeGround FgId -- response to ApplyForeGroundTemplate
   deriving (Generic, Show)
 
-data instance Response ForeGroundDataT =
-  ForeGroundData (FgtId, NonEmpty PatternName)
+data instance Response ForeGroundDataResT =
+  ForeGroundDataRes ForeGroundData
   deriving (Generic, Show)
 
 data instance Response DownloadForeGroundPngLinkT =
@@ -103,7 +104,7 @@ instance ToJSON (Response PatternListT) where
 
 instance FromJSON (Response PatternListT)
 
-instance ToJSON (Response ForeGroundTemplateDataT) where
+instance ToJSON (Response ForeGroundTemplateListT) where
     toEncoding = genericToEncoding defaultOptions
 
 instance FromJSON (Response ForeGroundTemplateListT)
@@ -133,10 +134,10 @@ instance ToJSON (Response NewForeGroundT) where
 
 instance FromJSON (Response NewForeGroundT)
 
-instance ToJSON (Response ForeGroundDataT) where
+instance ToJSON (Response ForeGroundDataResT) where
     toEncoding = genericToEncoding defaultOptions
 
-instance FromJSON (Response ForeGroundDataT)
+instance FromJSON (Response ForeGroundDataResT)
 
 instance ToJSON (Response DownloadForeGroundPngLinkT) where
     toEncoding = genericToEncoding defaultOptions
@@ -147,12 +148,12 @@ instance ToJSON EditPane where
     toEncoding = genericToEncoding defaultOptions
 instance FromJSON EditPane
 
-instance ToJSON EditFG where
+instance ToJSON EditFGTemplate where
     -- No need to provide a toJSON implementation.
 
     -- For efficiency, we write a simple toEncoding implementation, as
     -- the default version uses toJSON.
     toEncoding = genericToEncoding defaultOptions
 
-instance FromJSON EditFG
+instance FromJSON EditFGTemplate
     -- No need to provide a parseJSON implementation.

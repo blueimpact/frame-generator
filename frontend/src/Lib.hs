@@ -41,7 +41,8 @@ mainWidgetTop = do
   rec
     let
       url = "ws://" <> fullHost <> "/websocket"
-      wsSend = leftmost [req1, req2, req3, req4]
+      wsSend = leftmost [req1, req2, req3, req4
+                        req5, req6, req7]
 
       getResponse =
         fforMaybe (_webSocket_recv ws)
@@ -62,7 +63,8 @@ mainWidgetTop = do
 
     req1 <- patternBrowseWidget fullHost patternList
 
-    req2 <- editFGTemplateWidget fullHost getResponse getResponse
+    req2 <- editFGTemplateWidget fullHost patListDyn
+      getResponse getResponse
 
     req3 <- buttonE "Get FGT List" GetForeGroundTemplateList
 
