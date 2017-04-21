@@ -26,6 +26,7 @@ import Data.Monoid
 import Data.Aeson
 import Data.Maybe
 import Control.Monad.IO.Class
+import Reflex.Dom.Contrib.Utils
 
 import Common
 import qualified Message
@@ -71,6 +72,9 @@ mainWidgetTop = do
 
     ws <- webSocket url $ def &
       webSocketConfig_send .~ wsSend
+    putDebugLnE (_webSocket_recv ws) show
+    putDebugLnE (patternList) show
+    putDebugLnE (fgtList) show
   return ()
 
 getResponse ws =

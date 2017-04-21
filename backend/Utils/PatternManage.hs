@@ -14,16 +14,19 @@ import qualified Data.List.NonEmpty as NE
 import System.Random
 
 import qualified Data.Text as T
+import Debug.Trace
 
 -- getPatternList :: IO (Response)
 getPatternList = do
-  groups <- listDirectory $ T.unpack patternsDir
+  let path = "./" ++ T.unpack patternsDir
+  groups <- listDirectory $ path
 
-  PatternList <$> forM groups
+  v <- PatternList <$> forM groups
     (\folder -> do
-      files <- listDirectory ((T.unpack patternsDir) </> folder)
+      files <- listDirectory (path </> folder)
       return (T.pack folder, map T.pack $
                 filter (\f -> takeExtension f == ".png") files))
+  return (Debug.Trace.trace (show v) v)
 
 getPatternDia :: PatternName -> IO (Maybe (Diagram Rasterific))
 getPatternDia (d,f) = do
@@ -52,14 +55,14 @@ savePng names bs = do
     Just (dir', fileName') -> do
 
       let fullFileName = dir </> fileName ++ ".png"
-          dir = T.unpack dir'
+          dir = "." </> T.unpack dir'
           fileName = T.unpack fileName'
       createDirectoryIfMissing True dir
 
       return (fullFileName)
     Nothing -> do
       rnd <- randomRIO (0,maxBound::Int)
-      let fullFileName = (T.unpack previewDir) ++ fileName
+      let fullFileName = "." </> (T.unpack previewDir) ++ fileName
           fileName = show rnd ++ ".png"
       return fullFileName
   writeFile fullFileName bs
