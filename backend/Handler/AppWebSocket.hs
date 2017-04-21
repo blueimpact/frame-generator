@@ -38,26 +38,30 @@ appWebSocketServer appSt = do
 
   sourceWS $$ Data.Conduit.List.mapMaybeM
       (handleRequest )
+    =$= Data.Conduit.List.map encodeResponse
     =$= sinkWSBinary
   where
+    encodeResponse :: ResponseT -> BSL.ByteString
+    encodeResponse = encode
     mylift :: Handler a -> ReaderT r (HandlerT App IO) a
     mylift a = lift $ a
     -- handleRequest :: (MonadIO m, MonadLogger m)
     --   => BSL.ByteString
     --   -> m (Maybe BSL.ByteString)
+
     handleRequest req' =
       case decode req' of
         (Just GetPatternList) -> do
-          msg <- encode <$> liftIO getPatternList
-          return $ Just msg
+          lst <- liftIO getPatternList
+          return $ Just $ PatternListT lst
 
         (Just GetForeGroundTemplateList   ) -> do
           keys <- mylift $ runDB $ do
             selectKeysList
               ([] :: [Filter ForeGroundTemplateDB]) []
 
-          let msg = encode $ ForeGroundTemplateList $  map fromSqlKey keys
-          return $ Just msg
+          return $ Just $ ForeGroundTemplateListT $
+            ForeGroundTemplateList $ map fromSqlKey keys
 
         (Just (CreateForeGroundTemplate pat)) -> do
           key <- mylift $ runDB $ do
@@ -65,13 +69,15 @@ appWebSocketServer appSt = do
                 defFGParams =
                   ForeGroundParams 8 0 1.0 100
             insert (ForeGroundTemplateDB $ enc layers)
-          let msg = encode $ NewForeGroundTemplate (fromSqlKey key)
-          return $ Just msg
+          return $ Just $ NewForeGroundTemplateT $
+            NewForeGroundTemplate (fromSqlKey key)
 
         (Just (EditForeGroundTemplate fgtId)) -> do
           fgt <- mylift $ runDB $ do
             get (toSqlKey fgtId)
-          let msg = encode <$> (ForeGroundTemplateData <$> d)
+          let msg = ForeGroundTemplateDataT
+                <$> ForeGroundTemplateDataRes fgtId
+                      <$> (ForeGroundTemplateData <$> d)
               d = join $ decodeStrict <$>
                 foreGroundTemplateDBData <$> fgt
           return $ msg
@@ -81,9 +87,10 @@ appWebSocketServer appSt = do
             orig <- get ((toSqlKey fgtId) :: Key ForeGroundTemplateDB)
             forM orig insert
 
-          let msg = encode $ NewForeGroundTemplate
+          let msg = NewForeGroundTemplateT
+                <$> NewForeGroundTemplate
                 <$> (fromSqlKey <$> key)
-          return $ Just msg
+          return $ msg
 
         (Just (DeleteForeGroundTemplate fgtId)) -> do
           keys <- mylift $ runDB $ do
@@ -91,7 +98,7 @@ appWebSocketServer appSt = do
             selectKeysList
               ([] :: [Filter ForeGroundTemplateDB]) []
 
-          let msg = encode $ ForeGroundTemplateList $
+          let msg = ForeGroundTemplateListT $ ForeGroundTemplateList $
                       map fromSqlKey keys
           return $ Just msg
 
@@ -110,7 +117,7 @@ appWebSocketServer appSt = do
               return $ (\f -> (fgtId,pats,f)) <$> fname
 
           lst <- liftIO $ forM patsList getPreview
-          let msg = encode $ ForeGroundListPreview $
+          let msg = ForeGroundListPreviewT $ ForeGroundListPreview $
                       catMaybes $ NE.toList lst
           return $ Just msg
 
@@ -147,7 +154,7 @@ appWebSocketServer appSt = do
             selectList
               ([] :: [Filter ForeGroundDB]) []
 
-          let msg = encode $ ForeGroundList $
+          let msg = ForeGroundListT $ ForeGroundList $
                       map g objs
               g (Entity k (ForeGroundDB _ p _)) = (fromSqlKey k, p)
           return $ Just msg
@@ -155,7 +162,7 @@ appWebSocketServer appSt = do
         (Just (EditForeGround fgId)) -> do
           fg <- mylift $ runDB $ get $ toSqlKey fgId
 
-          let msg = encode <$> ForeGroundDataRes <$>
+          let msg = ForeGroundDataResT <$> ForeGroundDataRes <$>
                   (join $ decodeStrict <$> (foreGroundDBData <$> fg))
 
           return msg
