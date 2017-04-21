@@ -1,6 +1,9 @@
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeFamilies #-}
 module EditFGTemplate where
 
 import Reflex.Dom
@@ -16,18 +19,31 @@ import Data.Monoid
 import Data.Aeson
 import Data.Maybe
 import Control.Monad
+import Control.Monad.IO.Class
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
+import Reflex.Dom.Contrib.Utils
 
+import Common
 import Message
 
 -- type FgtData = [(PatternName, ForeGroundParams)]
-editFGTemplateWidget fullHost newFGTemplEv fgtDataEv' = do
+editFGTemplateWidget ::
+  (MonadWidget t m)
+  => Text
+  -> Dynamic t ([(Text,[Text])])
+  -> Event t (Message.Response NewForeGroundTemplateT)
+  -> Event t (Message.Response ForeGroundTemplateDataT)
+  -> m (Event t [ByteString])
+editFGTemplateWidget fullHost patListDyn newFGTemplEv fgtDataEv' = do
 
   let
-    fgtIdEv = (\(NewForeGroundTemplate fgtId) -> fdtId) <$> newFGTemplEv
+    fgtIdEv = (\(NewForeGroundTemplate fgtId) -> fgtId) <$> newFGTemplEv
 
-    fgtDataEv = (\(ForeGroundTemplateData fgtId fgtData) ->
+    fgtDataEv = (\(ForeGroundTemplateDataRes fgtId fgtData) ->
                    (fgtId, fgtData)) <$> fgtDataEv'
 
     editFGTEv = EditForeGroundTemplate <$> fgtIdEv
@@ -35,27 +51,32 @@ editFGTemplateWidget fullHost newFGTemplEv fgtDataEv' = do
     f d = do
       el "div" $ do
         el "table" $ do
-          renderEditWidget fullHost d
+          renderEditWidget fullHost patListDyn d
 
-  evDyn <- widgetHold (do {return [];}) (f <$> fgtDataEv)
+  evDyn <- widgetHold (do {return never;}) (f <$> fgtDataEv)
 
-  let evClick = leftmost $
-        map switchPromptlyDyn evDyn
+  let evClick = switchPromptlyDyn evDyn
 
-  ev <- getPostBuild
-  return $ enc $ leftmost [editFGTEv]
+  return $ enc $ leftmost [editFGTEv, evClick]
 
-
-
-renderEditWidget fullHost pats (fgtId, fgtData) = do
+renderEditWidget ::
+  (MonadWidget t m)
+  => Text
+  -> Dynamic t ([(Text,[Text])])
+  -> (FgtId, ForeGroundTemplateData)
+  -> m (Event t Message.Request)
+renderEditWidget fullHost pats
+  (fgtId, (ForeGroundTemplateData fgtData)) = do
   rec
     let eventMessage = enc $ leftmost [ev1,ev2]
 
         idTxt = tshow fgtId
+        ev2 = SaveFG <$ save
+        editFGTEv = EditForeGroundTemplate fgtId <$
+          (leftmost [save,reset])
     ws <- webSocket ("ws://" <> fullHost <> "/edit/foreground/" <> idTxt) $
       def & webSocketConfig_send .~ eventMessage
 
-      ev2 = SaveFG <$ save
 
     reset <- button "Reset All"
     -- Race in save signal, both WS fire
@@ -64,12 +85,11 @@ renderEditWidget fullHost pats (fgtId, fgtData) = do
     -- Controls
     ev1 <- el "tr" $ do
       let l = NE.zip (NE.fromList [1..]) fgtData
-      editMsgs <- forM l layerControls
+      editMsgs <- forM l (layerControls save)
       -- Select pattern and add a layer
-      let miniPatternBrowser = return never
-      addLayerMsg <- miniPatternBrowser pats
+      addLayerMsg <- miniPatternBrowser fullHost pats
 
-      return $ leftmost $ addLayerMsg: (NE.toList editMsgs)
+      return $ leftmost $ [addLayerMsg] ++ (NE.toList editMsgs)
 
     -- Preview
     el "tr" $ el "td" $ do
@@ -82,27 +102,45 @@ renderEditWidget fullHost pats (fgtId, fgtData) = do
       let dynAttr = ffor urlDyn (\u -> ("src" =: u))
       el "div" $ elDynAttr "img" dynAttr $ return ()
 
-    editFGTEv = EditForeGroundTemplate fgtId <$
-      (leftmost [save,reset])
   return editFGTEv
 
-miniPatternBrowser pats = do
+miniPatternBrowser ::
+  (MonadWidget t m)
+  => Text
+  -> Dynamic t [(Text,[Text])]
+  -> m (Event t EditFGTemplate)
+miniPatternBrowser fullHost pats = do
   let
+    f :: (MonadWidget t m) =>
+      (Text, [Text]) -> m [Event t EditFGTemplate]
     f (groupName, files) = do
       el "ul" $ do
         forM files
           (\file ->
-              el' "li" $ do
-                e <- img $ getImgUrl groupName file
-                return $ AddLayer (groupName, file)
+              el "li" $ do
+                let
+                  getImgUrl :: Text
+                  getImgUrl = "http://" <> fullHost
+                      <> patternsDir <> groupName <> "/" <> file
+                e <- img $ getImgUrl
+                return $ (AddLayer (groupName, file))
                   <$ domEvent Click e
           )
-  dynList <- dyn $ f <$> pats
-  return $ switchPromptlyDyn $ leftmost <$> dynList
+  ev <- el "div" $ dyn $ sequence <$> ((map f) <$> pats)
+  let
+    evFlattened = leftmost <$> (concat <$> ev)
 
-layerControls (layerId, (patternName, fgParam)) = do
-  el "td" $
-    inputs <- el "table" $ do
+  switchPromptly never evFlattened
+
+
+layerControls ::
+  (MonadWidget t m)
+  => Event t ()
+  -> (LayerId, (PatternName, ForeGroundParams))
+  -> m (Event t EditFGTemplate)
+layerControls save (layerId, (_, fgParam)) = do
+  el "td" $ do
+    el "table" $ do
       rec
         let
           updateResetEv = save
@@ -130,7 +168,7 @@ layerControls (layerId, (patternName, fgParam)) = do
 getEditMessage :: (Reflex t)
   => LayerId
   -> (RangeInput t, RangeInput t, RangeInput t, RangeInput t)
-  -> Event t [ByteString]
+  -> Event t EditFGTemplate
 getEditMessage layerId (scale, count, rotate, radius) =
   Edit layerId <$> anyEditEvent
   where

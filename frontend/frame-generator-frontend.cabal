@@ -19,9 +19,8 @@ library
       Lib
 
   other-modules:
-      EditForeGround
+      EditFGTemplate
       Utils
-      EditMask
       PatternBrowser
 
   build-depends:

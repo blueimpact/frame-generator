@@ -6,6 +6,8 @@ module PatternBrowser where
 import Reflex.Dom
 
 import Utils
+import Common
+import Message
 
 import qualified Data.Map as Map
 
@@ -19,7 +21,6 @@ import Data.Aeson
 import Data.Maybe
 import Control.Monad
 import Reflex.Dom.Contrib.Utils
-import Message
 
 patternBrowseWidget fullHost patternListEv = do
 
@@ -96,7 +97,7 @@ previewWidget fullHost patListDyn fgtListDyn fgPreviewListEv = do
         img url
 
         let pats = concat $ ffor grp (\(g,fs) ->
-                     ffor fs (\f -> (g,f))
+                     ffor fs (\f -> (g,f)))
 
         buttonE "Select" $
           PreviewForeGroundTemplate fgtId pats
@@ -105,7 +106,7 @@ previewWidget fullHost patListDyn fgtListDyn fgPreviewListEv = do
 
   evDyn <- el "div" $
     el "ul" $ do
-      grpSelDyn <- el "li" $
+      grpSelDyn <- el "li" $ do
         -- Group list, checkbox
         ti <- textInput def
         cblW <- dyn $ (checkboxList fst
@@ -138,6 +139,7 @@ foreGroundBrowseWidget fullHost fgListEv = do
   let
     getList = (\(ForeGroundList lst) -> lst) <$> fgTListEv
 
+    f :: (FgId, Text) -> _ (Event t Message.Request)
     f (fgId, file) = do
       el "li" $ do
         edit <- buttonE "Edit" $

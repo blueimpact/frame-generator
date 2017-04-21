@@ -10,9 +10,8 @@ module Lib where
 import Data.FileEmbed
 import Reflex.Dom
 
-import EditForeGround
-import EditMask
 import Utils
+import EditFGTemplate
 import PatternBrowser
 
 import qualified Data.Map as Map

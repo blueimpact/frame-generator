@@ -31,45 +31,6 @@ import qualified Data.ByteString as BS
 
 editForegroundWidget = createEditWidget
 
-rangeInputWidgetWithTextEditAndReset ::
-  (MonadWidget t m)
-  => Text                   -- Label
-  -> Double                 -- Initial value
-  -> (Float, Float, Float)  --
-  -> Event t ()             -- Update reset value, when saving
-  -> m (RangeInput t)
-
-rangeInputWidgetWithTextEditAndReset
-  label initVal' (min, max, step) resetUpd = do
-
-  rec
-    let
-        initVal = realToFrac initVal'
-        val = tshow <$> _rangeInput_value ri
-
-        setValEv1 = read <$> (T.unpack <$> e)
-        setValEv2 = tagPromptlyDyn resetValDyn r
-
-        setValEv = leftmost [setValEv1, setValEv2]
-
-    resetValDyn <- holdDyn initVal
-      (tagPromptlyDyn (_rangeInput_value ri) resetUpd)
-
-    (e,r) <- el "tr" $ do
-      el "table" $ do
-        el "td" $ text label
-        evValChange <- el "td" $
-          editInPlace (constant True) val
-        resetEv <- el "td" $
-          button "Reset"
-        return (evValChange, resetEv)
-
-    ri <- el "tr" $ rangeInput $
-      RangeInputConfig initVal setValEv
-        (constDyn $ ("min" =: tshow min) <> ("max" =: tshow max)
-          <> ("step" =: tshow step))
-
-  return ri
 
 tshow :: (Show a) => a -> Text
 tshow v = T.pack $ show v

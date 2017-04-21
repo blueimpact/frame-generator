@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- Common code between front-end and back-end
 module Common where
@@ -41,9 +42,16 @@ data MaskParams = MaskParams {
   deriving (Generic, Show, Eq)
 
 -- Values
+fgtemplatesDir :: Text
 fgtemplatesDir = "/static/fgtemplates/"
+
+patternsDir :: Text
 patternsDir = "/static/patterns/"
+
+foregroundDir :: Text
 foregroundDir = "/static/foregrounds/"
+
+previewDir :: Text
 previewDir = "/static/preview/"
 
 instance ToJSON ForeGroundData where
