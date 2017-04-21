@@ -1,7 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 
@@ -39,30 +38,22 @@ mainWidgetTop :: (MonadWidget t m
 mainWidgetTop = do
   fullHost <- getFullHostUrl
 
+  let
+    url = "ws://" <> fullHost <> "/websocket"
+
   rec
     let
-      url = "ws://" <> fullHost <> "/websocket"
+      patternList = (\(Message.PatternList lst) -> lst) <$>
+        (getResponse ws)
+
+      fgtList = (\(Message.ForeGroundTemplateList lst) -> lst) <$>
+        (getResponse ws)
+
       wsSend = leftmost [req1, req2, enc req3, req4
                         , enc req5, req6, req7]
 
-      -- getResponse :: (Message.GetResponse tag, Reflex t)
-      --   => WebSocket t -> Event t (Message.Response tag)
-      getResponse ws =
-        fforMaybe (_webSocket_recv ws)
-        (\req -> case decodeStrict req of
-          Just c -> Message.getResponse c
-          _ -> Nothing)
-
-      -- patternList :: (Reflex t) => Event t Message.Response
-      patternList = (\(Message.PatternList lst) -> lst) <$> (getResponse ws)
-
-      fgtList = (\(Message.ForeGroundTemplateList lst) -> lst) <$> (getResponse ws)
-
     patListDyn <- holdDyn [] patternList
     fgtListDyn <- holdDyn [] fgtList
-
-    ws <- webSocket url $ def &
-      webSocketConfig_send .~ wsSend
 
     req1 <- patternBrowseWidget fullHost patternList
 
@@ -76,10 +67,15 @@ mainWidgetTop = do
     req5 <- buttonE "Get FG List" Message.GetForeGroundList
 
     req6 <- foreGroundBrowseWidget fullHost (getResponse ws)
-
     req7 <- previewWidget fullHost patternList fgtListDyn (getResponse ws)
 
+    ws <- webSocket url $ def &
+      webSocketConfig_send .~ wsSend
   return ()
+
+getResponse ws =
+  fforMaybe (_webSocket_recv ws)
+    Message.getResponse
 
 getFullHostUrl :: (HasWebView m, MonadIO m) => m T.Text
 getFullHostUrl = do

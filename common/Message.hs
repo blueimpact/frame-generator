@@ -11,6 +11,7 @@ import GHC.Generics
 import Data.Aeson
 import Data.Text (Text)
 import Data.List.NonEmpty (NonEmpty)
+import Control.Monad
 
 import Common
 
@@ -53,44 +54,46 @@ data ResponseT =
   | DownloadForeGroundPngLinkT (Response DownloadForeGroundPngLinkT)
   deriving (Generic, Show)
 
+getResponse bs = join $ (getResponse' <$> (decodeStrict bs))
+
 class GetResponse t where
-  getResponse :: ResponseT -> Maybe (Response t)
+  getResponse' :: ResponseT -> Maybe (Response t)
 
 instance GetResponse PatternListT where
-  getResponse (PatternListT l) = Just l
-  getResponse _ = Nothing
+  getResponse' (PatternListT l) = Just l
+  getResponse' _ = Nothing
 
 instance GetResponse ForeGroundTemplateListT where
-  getResponse (ForeGroundTemplateListT l) = Just l
-  getResponse _ = Nothing
+  getResponse' (ForeGroundTemplateListT l) = Just l
+  getResponse' _ = Nothing
 
 instance GetResponse NewForeGroundTemplateT where
-  getResponse (NewForeGroundTemplateT l) = Just l
-  getResponse _ = Nothing
+  getResponse' (NewForeGroundTemplateT l) = Just l
+  getResponse' _ = Nothing
 
 instance GetResponse ForeGroundTemplateDataT where
-  getResponse (ForeGroundTemplateDataT l) = Just l
-  getResponse _ = Nothing
+  getResponse' (ForeGroundTemplateDataT l) = Just l
+  getResponse' _ = Nothing
 
 instance GetResponse ForeGroundListPreviewT where
-  getResponse (ForeGroundListPreviewT l) = Just l
-  getResponse _ = Nothing
+  getResponse' (ForeGroundListPreviewT l) = Just l
+  getResponse' _ = Nothing
 
 instance GetResponse ForeGroundListT where
-  getResponse (ForeGroundListT l) = Just l
-  getResponse _ = Nothing
+  getResponse' (ForeGroundListT l) = Just l
+  getResponse' _ = Nothing
 
 instance GetResponse NewForeGroundT where
-  getResponse (NewForeGroundT l) = Just l
-  getResponse _ = Nothing
+  getResponse' (NewForeGroundT l) = Just l
+  getResponse' _ = Nothing
 
 instance GetResponse ForeGroundDataResT where
-  getResponse (ForeGroundDataResT l) = Just l
-  getResponse _ = Nothing
+  getResponse' (ForeGroundDataResT l) = Just l
+  getResponse' _ = Nothing
 
 instance GetResponse DownloadForeGroundPngLinkT where
-  getResponse (DownloadForeGroundPngLinkT l) = Just l
-  getResponse _ = Nothing
+  getResponse' (DownloadForeGroundPngLinkT l) = Just l
+  getResponse' _ = Nothing
 
 
 data family Response a
