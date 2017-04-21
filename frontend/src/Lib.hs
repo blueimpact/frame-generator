@@ -21,6 +21,8 @@ import qualified URI.ByteString            as U
 import           Control.Lens              ((&), (.~), (^.), view, _Just)
 import qualified Data.Text                 as T
 import qualified Data.Text.Encoding        as T
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 import Data.Monoid
 import Data.Aeson
 import Data.Maybe
@@ -40,19 +42,20 @@ mainWidgetTop = do
   rec
     let
       url = "ws://" <> fullHost <> "/websocket"
-      wsSend = leftmost [req1, req2, req3, req4
+      wsSend = leftmost [req1, req2, req3, req4,
                         req5, req6, req7]
 
+      getResponse :: (Message.GetResponse tag, Reflex t) => Event t (Message.Response tag)
       getResponse =
         fforMaybe (_webSocket_recv ws)
         (\req -> case decodeStrict req of
-          Just c -> Just c
+          Just c -> Message.getResponse c
           _ -> Nothing)
 
       -- patternList :: (Reflex t) => Event t Message.Response
-      patternList = (\(PatternList lst) -> lst) <$> getResponse
+      patternList = (\(Message.PatternList lst) -> lst) <$> getResponse
 
-      fgtList = (\(ForeGroundTemplateList lst) -> lst) <$> getResponse
+      fgtList = (\(Message.ForeGroundTemplateList lst) -> lst) <$> getResponse
 
     patListDyn <- holdDyn [] patternList
     fgtListDyn <- holdDyn [] fgtList
@@ -65,15 +68,15 @@ mainWidgetTop = do
     req2 <- editFGTemplateWidget fullHost patListDyn
       getResponse getResponse
 
-    req3 <- buttonE "Get FGT List" GetForeGroundTemplateList
+    req3 <- enc $ buttonE "Get FGT List" Message.GetForeGroundTemplateList
 
     req4 <- foreGroundTemplateBrowseWidget fullHost fgtList
 
-    req5 <- buttonE "Get FG List" GetForeGroundList
+    req5 <- enc $ buttonE "Get FG List" Message.GetForeGroundList
 
     req6 <- foreGroundBrowseWidget fullHost getResponse
 
-    req7 <- previewWidget fullHost patListDyn fgtListDyn getResponse
+    req7 <- previewWidget fullHost patternList fgtListDyn getResponse
 
   return ()
 
@@ -85,8 +88,7 @@ getFullHostUrl = do
     -- Get the host name + port
     fullHost = if T.null port then host else host <> ":" <> port
 
-    hostMaybe = ffor authority
-      (\x -> T.decodeUtf8 $ U.hostBS $ x ^. U.authorityHostL)
+    hostMaybe = ffor authority (\x -> T.decodeUtf8 $ U.hostBS $ x ^. U.authorityHostL)
 
     host = hostMaybe ^. _Just :: T.Text -- Empty string for Nothing
 

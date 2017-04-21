@@ -21,7 +21,8 @@ data Request =
   | EditForeGroundTemplate FgtId
   | CloneForeGroundTemplate FgtId
   | DeleteForeGroundTemplate FgtId
-  | PreviewForeGroundTemplate FgtId [NonEmpty PatternName]
+  | DefaultPreview FgtId
+  | PreviewForeGroundTemplate FgtId (NonEmpty (NonEmpty PatternName))
   | ApplyForeGroundTemplate FgtId (NonEmpty PatternName)
   | GetForeGroundList
   | EditForeGround FgId
@@ -39,6 +40,58 @@ data ForeGroundListT
 data NewForeGroundT
 data ForeGroundDataResT
 data DownloadForeGroundPngLinkT
+
+data ResponseT =
+    PatternListT               (Response PatternListT)
+  | ForeGroundTemplateListT    (Response ForeGroundTemplateListT)
+  | NewForeGroundTemplateT     (Response NewForeGroundTemplateT)
+  | ForeGroundTemplateDataT    (Response ForeGroundTemplateDataT)
+  | ForeGroundListPreviewT     (Response ForeGroundListPreviewT)
+  | ForeGroundListT            (Response ForeGroundListT)
+  | NewForeGroundT             (Response NewForeGroundT)
+  | ForeGroundDataResT         (Response ForeGroundDataResT)
+  | DownloadForeGroundPngLinkT (Response DownloadForeGroundPngLinkT)
+  deriving (Generic, Show)
+
+class GetResponse t where
+  getResponse :: ResponseT -> Maybe (Response t)
+
+instance GetResponse PatternListT where
+  getResponse (PatternListT l) = Just l
+  getResponse _ = Nothing
+
+instance GetResponse ForeGroundTemplateListT where
+  getResponse (ForeGroundTemplateListT l) = Just l
+  getResponse _ = Nothing
+
+instance GetResponse NewForeGroundTemplateT where
+  getResponse (NewForeGroundTemplateT l) = Just l
+  getResponse _ = Nothing
+
+instance GetResponse ForeGroundTemplateDataT where
+  getResponse (ForeGroundTemplateDataT l) = Just l
+  getResponse _ = Nothing
+
+instance GetResponse ForeGroundListPreviewT where
+  getResponse (ForeGroundListPreviewT l) = Just l
+  getResponse _ = Nothing
+
+instance GetResponse ForeGroundListT where
+  getResponse (ForeGroundListT l) = Just l
+  getResponse _ = Nothing
+
+instance GetResponse NewForeGroundT where
+  getResponse (NewForeGroundT l) = Just l
+  getResponse _ = Nothing
+
+instance GetResponse ForeGroundDataResT where
+  getResponse (ForeGroundDataResT l) = Just l
+  getResponse _ = Nothing
+
+instance GetResponse DownloadForeGroundPngLinkT where
+  getResponse (DownloadForeGroundPngLinkT l) = Just l
+  getResponse _ = Nothing
+
 
 data family Response a
 
@@ -157,3 +210,7 @@ instance ToJSON EditFGTemplate where
 
 instance FromJSON EditFGTemplate
     -- No need to provide a parseJSON implementation.
+
+instance ToJSON (ResponseT) where
+    toEncoding = genericToEncoding defaultOptions
+instance FromJSON ResponseT
