@@ -111,7 +111,7 @@ appWebSocketServer appSt = do
 
           lst <- liftIO $ forM patsList getPreview
           let msg = encode $ ForeGroundListPreview $
-                      catMaybes lst
+                      catMaybes $ NE.toList lst
           return $ Just msg
 
         (Just (ApplyForeGroundTemplate fgtId pats)) -> do

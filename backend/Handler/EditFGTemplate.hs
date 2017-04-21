@@ -119,7 +119,7 @@ webSocketServer fgtID fgtData' dias' = do
           imgData <- liftIO $ readIORef imgDataRef
           mylift $ runDB $ update fgtID
             [ForeGroundTemplateDBData =. (BSL.toStrict $ encode d)]
-          liftIO $ savePng (Just (T.pack fgtemplatesDir, tshow fgtID)) $
+          liftIO $ savePng (Just (fgtemplatesDir, tshow fgtID)) $
             BSL.toStrict imgData
           return Nothing
 

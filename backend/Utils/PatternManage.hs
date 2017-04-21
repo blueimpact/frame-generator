@@ -17,11 +17,11 @@ import qualified Data.Text as T
 
 -- getPatternList :: IO (Response)
 getPatternList = do
-  groups <- listDirectory patternsDir
+  groups <- listDirectory $ T.unpack patternsDir
 
   PatternList <$> forM groups
     (\folder -> do
-      files <- listDirectory (patternsDir </> folder)
+      files <- listDirectory ((T.unpack patternsDir) </> folder)
       return (T.pack folder, map T.pack $
                 filter (\f -> takeExtension f == ".png") files))
 
@@ -59,7 +59,7 @@ savePng names bs = do
       return (fullFileName)
     Nothing -> do
       rnd <- randomRIO (0,maxBound::Int)
-      let fullFileName = previewDir ++ fileName
+      let fullFileName = (T.unpack previewDir) ++ fileName
           fileName = show rnd ++ ".png"
       return fullFileName
   writeFile fullFileName bs
