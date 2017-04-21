@@ -35,27 +35,28 @@ main = mainWidgetWithCss  $(embedFile "src/style.css")
   mainWidgetTop
 
 mainWidgetTop :: (MonadWidget t m
-   , PerformEvent t m) => m ()
+   , PerformEvent t m, Reflex t) => m ()
 mainWidgetTop = do
   fullHost <- getFullHostUrl
 
   rec
     let
       url = "ws://" <> fullHost <> "/websocket"
-      wsSend = leftmost [req1, req2, req3, req4,
-                        req5, req6, req7]
+      wsSend = leftmost [req1, req2, enc req3, req4
+                        , enc req5, req6, req7]
 
-      getResponse :: (Message.GetResponse tag, Reflex t) => Event t (Message.Response tag)
-      getResponse =
+      -- getResponse :: (Message.GetResponse tag, Reflex t)
+      --   => WebSocket t -> Event t (Message.Response tag)
+      getResponse ws =
         fforMaybe (_webSocket_recv ws)
         (\req -> case decodeStrict req of
           Just c -> Message.getResponse c
           _ -> Nothing)
 
       -- patternList :: (Reflex t) => Event t Message.Response
-      patternList = (\(Message.PatternList lst) -> lst) <$> getResponse
+      patternList = (\(Message.PatternList lst) -> lst) <$> (getResponse ws)
 
-      fgtList = (\(Message.ForeGroundTemplateList lst) -> lst) <$> getResponse
+      fgtList = (\(Message.ForeGroundTemplateList lst) -> lst) <$> (getResponse ws)
 
     patListDyn <- holdDyn [] patternList
     fgtListDyn <- holdDyn [] fgtList
@@ -66,17 +67,17 @@ mainWidgetTop = do
     req1 <- patternBrowseWidget fullHost patternList
 
     req2 <- editFGTemplateWidget fullHost patListDyn
-      getResponse getResponse
+      (getResponse ws) (getResponse ws)
 
-    req3 <- enc $ buttonE "Get FGT List" Message.GetForeGroundTemplateList
+    req3 <- buttonE "Get FGT List" Message.GetForeGroundTemplateList
 
     req4 <- foreGroundTemplateBrowseWidget fullHost fgtList
 
-    req5 <- enc $ buttonE "Get FG List" Message.GetForeGroundList
+    req5 <- buttonE "Get FG List" Message.GetForeGroundList
 
-    req6 <- foreGroundBrowseWidget fullHost getResponse
+    req6 <- foreGroundBrowseWidget fullHost (getResponse ws)
 
-    req7 <- previewWidget fullHost patternList fgtListDyn getResponse
+    req7 <- previewWidget fullHost patternList fgtListDyn (getResponse ws)
 
   return ()
 
