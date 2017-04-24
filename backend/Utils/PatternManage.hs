@@ -56,7 +56,7 @@ savePng names bs = do
     Just (dir', fileName') -> do
 
       let fullFileName = dir </> fileName ++ ".png"
-          dir = "./" </> T.unpack dir'
+          dir = "./" ++ T.unpack dir'
           fileName = T.unpack fileName'
       createDirectoryIfMissing True dir
 
