@@ -29,17 +29,21 @@ import qualified Control.Lens
 
 getEditForeGroundR :: ForeGroundTemplateDBId -> Handler Html
 getEditForeGroundR fgtID = do
+  $logInfo $ "Edit foreground template"
 
   fgt <- runDB $ get fgtID
   let fgtData = join $ decodeStrict <$>
                 foreGroundTemplateDBData <$> fgt
       pats = (map fst) <$> fgtData
   dias <- liftIO $ mapM getPatternsDia pats
+  $logInfo $ (tshow $ isJust (join dias))
+  $logInfo $ (tshow $ fgtData)
   mapM webSockets (webSocketServer fgtID <$> fgtData <*> (join dias))
+  $logInfo $ "Not doing websocket"
   redirect HomeR
 
 webSocketServer fgtID fgtData' dias' = do
-  $logInfo $ "Doing edit foreground tempate"
+  $logInfo $ "Doing edit foreground template"
 
   fgtDataRef <- liftIO $ newIORef fgtData'
   diasRef <- liftIO $ newIORef dias'
@@ -58,6 +62,7 @@ webSocketServer fgtID fgtData' dias' = do
       -> BSL.ByteString
       -> ReaderT r (HandlerT App IO) (Maybe BSL.ByteString)
     handleRequest fgtDataRef diasRef imgDataRef req' = do
+      $logInfo $ T.pack $ "Doing Edit" ++ show req'
       case decode req' of
         Just (Edit layerId params) -> do
           d <- liftIO $ readIORef fgtDataRef
@@ -73,6 +78,7 @@ webSocketServer fgtID fgtData' dias' = do
 
           liftIO $ writeIORef imgDataRef resImg
           liftIO $ writeIORef fgtDataRef newD
+          $logInfo "Done EditLayer"
           return (Just resImg)
 
         Just (AddLayer pat) -> do
@@ -93,6 +99,7 @@ webSocketServer fgtID fgtData' dias' = do
             liftIO $ mapM (writeIORef diasRef) newDias
             liftIO $ writeIORef fgtDataRef newD
 
+          $logInfo "Done addLayer"
           liftIO $ mapM (writeIORef imgDataRef) resImg
           return resImg
 

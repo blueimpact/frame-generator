@@ -30,7 +30,7 @@ getPatternList = do
 
 getPatternDia :: PatternName -> IO (Maybe (Diagram Rasterific))
 getPatternDia (d,f) = do
-  e <- loadImageEmb (T.unpack (d <> f))
+  e <- loadImageEmb (T.unpack ("./" <> patternsDir <> d <> "/" <> f))
   return $ case e of
     Left _ -> Nothing
     Right dimg -> Just $ image dimg
@@ -38,11 +38,12 @@ getPatternDia (d,f) = do
 getPatternsDia :: NonEmpty PatternName ->
   IO (Maybe (NonEmpty (Diagram Rasterific)))
 getPatternsDia pats = do
-  dias <- mapM getPatternDia (NE.toList pats)
-  let patsFound = all isJust dias
+  dias <- mapM getPatternDia $ (Debug.Trace.trace $ "Find Pats:" ++ show pats) (NE.toList pats)
+  let patsFound = Debug.Trace.trace ("Pats Found:" ++ show val)  val
+      val = all isJust dias
       p = NE.fromList $ catMaybes dias
 
-  if (not patsFound)
+  if patsFound
     then return $ Just p
     else return Nothing
 
@@ -55,14 +56,14 @@ savePng names bs = do
     Just (dir', fileName') -> do
 
       let fullFileName = dir </> fileName ++ ".png"
-          dir = "." </> T.unpack dir'
+          dir = "./" </> T.unpack dir'
           fileName = T.unpack fileName'
       createDirectoryIfMissing True dir
 
       return (fullFileName)
     Nothing -> do
       rnd <- randomRIO (0,maxBound::Int)
-      let fullFileName = "." </> (T.unpack previewDir) ++ fileName
+      let fullFileName = "./" </> (T.unpack previewDir) ++ fileName
           fileName = show rnd ++ ".png"
       return fullFileName
   writeFile fullFileName bs
