@@ -24,6 +24,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Diagrams.Prelude (Diagram)
 import Diagrams.Backend.Rasterific (Rasterific)
+import Database.Persist.Sql (fromSqlKey, toSqlKey)
 import Data.Aeson
 import qualified Control.Lens
 
@@ -69,7 +70,7 @@ webSocketServer fgtID fgtData' dias' = do
           dias <- liftIO $ readIORef diasRef
           -- Better method?
           let newD = Control.Lens.imap
-                (\i a@(p,_) -> if i == layerId
+                (\i a@(p,_) -> if (i + 1) == layerId
                   then (p,params)
                   else a) d
 
@@ -126,7 +127,7 @@ webSocketServer fgtID fgtData' dias' = do
           imgData <- liftIO $ readIORef imgDataRef
           mylift $ runDB $ update fgtID
             [ForeGroundTemplateDBData =. (BSL.toStrict $ encode d)]
-          liftIO $ savePng (Just (fgtemplatesDir, tshow fgtID)) $
+          liftIO $ savePng (Just (fgtemplatesDir, tshow (fromSqlKey fgtID))) $
             BSL.toStrict imgData
           return Nothing
 
