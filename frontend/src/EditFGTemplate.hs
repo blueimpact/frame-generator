@@ -27,6 +27,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import Reflex.Dom.Contrib.Utils
 
+import qualified CSSClass as C
 import Common
 import Message
 
@@ -48,9 +49,11 @@ editFGTemplateWidget fullHost patListDyn newFGTemplEv fgtDataEv' = do
 
     editFGTEv = EditForeGroundTemplate <$> fgtIdEv
 
-    f d = do
-      el "div" $ do
-        el "table" $ do
+    f d = divClass "container" $ do
+      divClass "panel panel-primary" $ do
+        divClass "panel-heading" $
+          text "Edit Widget"
+        divClass "panel-body" $
           renderEditWidget fullHost patListDyn d
 
   evDyn <- widgetHold (do {return never;}) (f <$> fgtDataEv)
@@ -83,16 +86,17 @@ renderEditWidget fullHost pats
     save <- button "Save"
 
     -- Controls
-    ev1 <- el "tr" $ do
-      let l = NE.zip (NE.fromList [1..]) fgtData
-      editMsgs <- forM l (layerControls save)
-      -- Select pattern and add a layer
-      addLayerMsg <- miniPatternBrowser fullHost pats
+    ev1 <- elClass "table" "table" $
+      elClass "tr" "" $ do
+        let l = NE.zip (NE.fromList [1..]) fgtData
+        editMsgs <- forM l (layerControls save)
+        -- Select pattern and add a layer
+        addLayerMsg <- miniPatternBrowser fullHost pats
 
-      return $ leftmost $ [addLayerMsg] ++ (NE.toList editMsgs)
+        return $ leftmost $ [addLayerMsg] ++ (NE.toList editMsgs)
 
     -- Preview
-    el "tr" $ el "td" $ do
+    divClass "panel" $ do
       let
         myImgUrl =
           ffor (_webSocket_recv ws)
@@ -100,7 +104,7 @@ renderEditWidget fullHost pats
       urlEv <- performEvent myImgUrl
       urlDyn <- holdDyn "dummy" urlEv
       let dynAttr = ffor urlDyn (\u -> ("src" =: u))
-      el "div" $ elDynAttr "img" dynAttr $ return ()
+      divClass "edit-fgt-widget-live-preview" $ elDynAttr "img" dynAttr $ return ()
 
   return editFGTEv
 
@@ -114,10 +118,10 @@ miniPatternBrowser fullHost pats = do
     f :: (MonadWidget t m) =>
       (Text, [Text]) -> m [Event t EditFGTemplate]
     f (groupName, files) = do
-      el "ul" $ do
+      divClass "row" $ do
         forM files
           (\file ->
-              el "li" $ do
+              divClass "col-md-1" $ do
                 let
                   getImgUrl :: Text
                   getImgUrl = "http://" <> fullHost
@@ -126,7 +130,7 @@ miniPatternBrowser fullHost pats = do
                 return $ (AddLayer (groupName, file))
                   <$ domEvent Click e
           )
-  ev <- el "div" $ dyn $ sequence <$> ((map f) <$> pats)
+  ev <- divClass C.editFgtWidgetPatternBrowse $ dyn $ sequence <$> ((map f) <$> pats)
   let
     evFlattened = leftmost <$> (concat <$> ev)
 

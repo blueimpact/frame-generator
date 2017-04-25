@@ -37,19 +37,19 @@ patternBrowseWidget fullHost patternListEv = do
 
     f :: (MonadWidget t m) => (Text,[Text]) -> m [Event t Message.Request]
     f (groupName, files) = do
-      el "ul" $ do
-        text groupName
+      divClass "row panel panel-primary" $ do
+        divClass "panel-heading" $ text groupName
         forM files
           (\file ->
-              el "li" $ do
-                text file
-                ev <- buttonE "Create Template" $
-                  CreateForeGroundTemplate (groupName, file)
-                img $ getImgUrl groupName file
-                return ev
+             divClass "col-md-1" $ do
+               text file
+               e <- img $ getImgUrl groupName file
+               return $
+                 (CreateForeGroundTemplate (groupName, file))
+                  <$ domEvent Click e
           )
 
-  evDyn <- el "div" $
+  evDyn <- divClass "container" $
     widgetHold (do {text "loading"; return [];}) $
       sequence <$> ((map f) <$> patternListEv)
 
@@ -64,7 +64,7 @@ foreGroundTemplateBrowseWidget fullHost fgTListEv = do
   let
 
     f fgtId = do
-      el "li" $ do
+      divClass "col-md-2" $ do
         preview <- buttonE "Preview" $
           DefaultPreview fgtId
         edit <- buttonE "Edit" $
@@ -80,7 +80,7 @@ foreGroundTemplateBrowseWidget fullHost fgTListEv = do
         return $ leftmost $
           [preview, edit, clone, delete]
 
-  evDyn <- el "div" $
+  evDyn <- divClass "container" $
     widgetHold (do {return [];})
              ((mapM f) <$> fgTListEv)
 
@@ -101,9 +101,9 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
     getList = (\(ForeGroundListPreview lst) -> lst) <$> fgPreviewListEv
     -- Show Preview
     f (fgtId, pats, file) = do
-      el "li" $ do
+      divClass "col-md-1" $ do
         let url = "http://" <> fullHost
-              <> previewDir <> file
+              <> file
         img url
         buttonE "Save" $
           ApplyForeGroundTemplate fgtId pats
@@ -114,51 +114,57 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
       -> FgtId
       -> m (Event t Message.Request)
     fgtBrowse grp fgtId = do
-      el "li" $ do
+      divClass "col-md-1" $ do
         let url = "http://" <> fullHost
               <> fgtemplatesDir <> tshow fgtId <> ".png"
-        img url
+        e <- img url
 
-        let pats = NE.nonEmpty $ catMaybes $ ffor grp (\(g,fs) -> NE.nonEmpty $
-                     ffor fs (\f -> (g,f)))
+        let pats = NE.nonEmpty $ concat $ ffor grp (\(g,fs) ->
+                     ffor fs (\f -> NE.fromList [(g,f)]))
 
-        select <- button "Select"
-        let ev = fforMaybe select (\_ -> PreviewForeGroundTemplate fgtId <$> pats)
+        let ev = fforMaybe (domEvent Click e)
+                   (\_ -> PreviewForeGroundTemplate fgtId <$> pats)
         return ev
 
     fgtBrowse' fgtIds grp = mapM (fgtBrowse grp) fgtIds
-    filtFun t (g,_) = isJust (T.commonPrefixes t g)
+    filtFun t (g,_) =
+      if T.null t
+        then True
+        else isJust (T.commonPrefixes t g)
 
-  evClick <- el "div" $
-    el "ul" $ do
-      grpSelDyn <- el "li" $ do
-        -- Group list, checkbox
-        ti <- textInput def
-        widgetHold (return (constDyn [])) $ (\pats -> do
-          w <- checkboxList fst
-            filtFun
-            never
-            (value ti)
-            S.empty
-            pats
-          return $ value w) <$> patternList
+  evClick <- divClass "preview-widget container" $
+    divClass "panel" $ do
+      divClass "panel-heading" $ text "Preview Widget"
+      divClass "panel-body" $ do
 
-      -- Select new template event
-      ev1' <- el "li" $ el "ul" $
-        -- template list, select
-        dyn $ zipDynWith fgtBrowse' fgtListDyn (join grpSelDyn)
+        grpSelDyn <- divClass "row" $ do
+          -- Group list, checkbox
+          ti <- textInput def
+          widgetHold (return (constDyn [])) $ (\pats -> do
+            w <- checkboxList fst
+              filtFun
+              never
+              (value ti)
+              S.empty
+              pats
+            return $ value w) <$> patternList
 
-      -- Apply template event
-      ev2Dyn <- el "li" $ do
-        -- preview pane
+        -- Select new template event
+        ev1' <- divClass "row" $
+          -- template list, select
+          dyn $ zipDynWith fgtBrowse' fgtListDyn (join grpSelDyn)
 
-        el "div" $ el "ul" $
-          widgetHold (do {return [];})
-            (sequence <$> ((map f) <$> getList))
+        -- Apply template event
+        ev2Dyn <- divClass "row" $ do
+          -- preview pane
 
-      ev1 <- switchPromptly never (leftmost <$> ev1')
-      let ev2 = switchPromptlyDyn $ leftmost <$> ev2Dyn
-      return $ leftmost [ev1,ev2]
+          divClass "" $
+            widgetHold (do {return [];})
+              (sequence <$> ((map f) <$> getList))
+
+        ev1 <- switchPromptly never (leftmost <$> ev1')
+        let ev2 = switchPromptlyDyn $ leftmost <$> ev2Dyn
+        return $ leftmost [ev1,ev2]
 
   return $ enc evClick
 
@@ -173,7 +179,7 @@ foreGroundBrowseWidget fullHost fgListEv = do
 
     f :: (MonadWidget t m) => (FgId, Text) -> m (Event t Message.Request)
     f (fgId, file) = do
-      el "li" $ do
+      divClass "col-md-2" $ do
         edit <- buttonE "Edit" $
           EditForeGround fgId
         delete <- buttonE "Delete" $
@@ -181,14 +187,17 @@ foreGroundBrowseWidget fullHost fgListEv = do
         -- Edit mask
         -- Download
         let url = "http://" <> fullHost
-              <> foregroundDir <> file
+              <> file
         img url
 
         return $ leftmost $
           [edit, delete]
-  evDyn <- el "div" $
-    widgetHold (do {return [];})
-      (sequence <$> ((map f) <$> getList))
+  evDyn <- divClass "container" $
+    divClass "panel" $ do
+      divClass "panel-heading" $ text "FG Browse Widget"
+      divClass "panel-body" $ divClass "row" $ do
+        widgetHold (do {return [];})
+          (sequence <$> ((map f) <$> getList))
 
   let evClick = switchPromptlyDyn $ leftmost <$> evDyn
 

@@ -31,7 +31,9 @@ import Reflex.Dom.Contrib.Utils
 import Common
 import qualified Message
 
-main = mainWidgetWithCss  $(embedFile "src/style.css")
+main = mainWidgetWithCss
+  ($(embedFile "src/style.css")
+  <> $(embedFile "src/bootstrap.css"))
   mainWidgetTop
 
 mainWidgetTop :: (MonadWidget t m
@@ -58,12 +60,12 @@ mainWidgetTop = do
 
     req1 <- patternBrowseWidget fullHost patternList
 
-    req2 <- editFGTemplateWidget fullHost patListDyn
-      (getResponse ws) (getResponse ws)
-
     req3 <- buttonE "Get FGT List" Message.GetForeGroundTemplateList
 
     req4 <- foreGroundTemplateBrowseWidget fullHost fgtList
+
+    req2 <- editFGTemplateWidget fullHost patListDyn
+      (getResponse ws) (getResponse ws)
 
     req5 <- buttonE "Get FG List" Message.GetForeGroundList
 
@@ -73,6 +75,7 @@ mainWidgetTop = do
     ws <- webSocket url $ def &
       webSocketConfig_send .~ wsSend
     putDebugLnE (_webSocket_recv ws) show
+    putDebugLnE wsSend show
     putDebugLnE (patternList) show
     putDebugLnE (fgtList) show
   return ()

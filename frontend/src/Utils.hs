@@ -26,6 +26,7 @@ import Reflex.Dom.Contrib.Utils
 import Reflex.Dom.Contrib.Widgets.EditInPlace
 import Data.Aeson
 import Data.Monoid
+import qualified CSSClass as C
 
 foreign import javascript unsafe "window['URL']['createObjectURL']($1)" createObjectURL_ :: Blob.Blob -> IO JS.JSVal
 
@@ -51,8 +52,8 @@ buttonE txt c = do
   return (c <$ ev)
 
 img url = do
-  (e,_) <- elAttr' ("img")
-    ("src" =: url) blank
+  (e,_) <- elAttr' "a" (("href" =: "#") <> ("class" =: "thumbnail")) $
+    elAttr ("img") (("src" =: url)) blank
   return e
 
 rangeInputWidgetWithTextEditAndReset ::

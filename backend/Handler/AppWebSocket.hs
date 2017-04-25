@@ -102,6 +102,11 @@ appWebSocketServer appSt = do
                       map fromSqlKey keys
           return $ Just msg
 
+        (Just (DefaultPreview fgtId)) -> do
+          let msg = ForeGroundListPreviewT $ ForeGroundListPreview $
+                      []
+          return $ Just msg
+
         (Just (PreviewForeGroundTemplate fgtId patsList)) -> do
           fgt <- mylift $ runDB $ get $ toSqlKey fgtId
 
@@ -111,12 +116,14 @@ appWebSocketServer appSt = do
 
               let resDia = getForeGround <$> dias <*> l
                   resImg = encodeToPng <$> resDia <*> pure 600
-                  l = join $ decodeStrict <$>
+                  l = (NE.map snd) <$> pl
+                  pl :: Maybe (NonEmpty (PatternName, ForeGroundParams))
+                  pl = join $ decodeStrict <$>
                     foreGroundTemplateDBData <$> fgt
-              fname <- forM resImg (savePng Nothing)
+              fname <- liftIO $ forM resImg (savePng Nothing)
               return $ (\f -> (fgtId,pats,f)) <$> fname
 
-          lst <- liftIO $ forM patsList getPreview
+          lst <- forM patsList getPreview
           let msg = ForeGroundListPreviewT $ ForeGroundListPreview $
                       catMaybes $ NE.toList lst
           return $ Just msg
@@ -128,21 +135,24 @@ appWebSocketServer appSt = do
 
           let resDia = getForeGround <$> dias <*> l
               resImg = encodeToPng <$> resDia <*> pure 600
-              l = join $ decodeStrict <$>
-                foreGroundTemplateDBData <$> fgt
+              l = (NE.map snd) <$> pl
+              pl :: Maybe (NonEmpty (PatternName, ForeGroundParams))
+              pl = join $ decodeStrict <$>
+                    foreGroundTemplateDBData <$> fgt
               m = getMask 600 (MaskParams 4 4)
                 <$> resDia
 
               grps = map fst pats
-              patNames = concat $ map snd pats
-              name = T.intersperse '_' patNames
-              dir = T.concat $ NE.toList $ NE.intersperse "_" grps
+              name = concat $ intersperse "_" $ NE.cons (tshow fgtId) fnames
+              fnames = (map ((T.dropEnd 4).snd) pats) -- remove .png
+              dir = (T.concat $ NE.toList $ NE.intersperse "_" grps) <> "/"
 
               d = enc $ ForeGroundData fgtId pats
+              dirSave = foregroundDir <> dir
 
-          fname <- liftIO $ forM resImg (savePng (Just (dir,name)))
+          fname <- liftIO $ forM resImg (savePng (Just (dirSave,name)))
 
-          maskName <- liftIO $ forM m (savePng (Just (dir,name <> "_mask")))
+          maskName <- liftIO $ forM m (savePng (Just (dirSave,name <> "_mask")))
 
           let fg = ForeGroundDB d <$> fname <*> maskName
           mylift $ runDB $ mapM insert fg
@@ -172,4 +182,4 @@ appWebSocketServer appSt = do
           return Nothing
 
         (Just (DownloadForeGroundPng _)) -> return Nothing
-        _ -> return Nothing
+        Nothing -> return Nothing

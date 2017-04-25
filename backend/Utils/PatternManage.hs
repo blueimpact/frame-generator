@@ -55,16 +55,16 @@ savePng names bs = do
   fullFileName <- case names of
     Just (dir', fileName') -> do
 
-      let fullFileName = dir </> fileName ++ ".png"
-          dir = "./" ++ T.unpack dir'
-          fileName = T.unpack fileName'
-      createDirectoryIfMissing True dir
+      let fullFileName = dir ++ fileName
+          dir = T.unpack dir'
+          fileName = (T.unpack fileName') ++ ".png"
+      createDirectoryIfMissing True ("./" ++ dir)
 
       return (fullFileName)
     Nothing -> do
       rnd <- randomRIO (0,maxBound::Int)
-      let fullFileName = "./" </> (T.unpack previewDir) ++ fileName
+      let fullFileName = (T.unpack previewDir) ++ fileName
           fileName = show rnd ++ ".png"
       return fullFileName
-  writeFile fullFileName bs
+  writeFile ("./" ++ fullFileName) bs
   return $ T.pack $ fullFileName
