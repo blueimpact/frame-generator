@@ -6,6 +6,7 @@ import System.FilePath.Posix
 import Diagrams.TwoD.Image
 import Diagrams.Backend.Rasterific
 import Diagrams.Prelude hiding (render)
+import qualified Diagrams.TwoD.Size as Dia
 import Message
 import Common
 
@@ -46,6 +47,25 @@ getPatternsDia pats = do
   if patsFound
     then return $ Just p
     else return Nothing
+
+scaledImgWidth = 50
+
+getPatternsDiaScaled :: NonEmpty PatternName ->
+  IO (Maybe (NonEmpty (Diagram Rasterific)))
+getPatternsDiaScaled pats = do
+  dias <- getPatternsDia pats
+
+  let getScaledDias dia =
+        if scaling < 1.0
+          then scale scaling dia
+          else dia
+        where
+          dw = (Dia.width dia)
+          dh = (Dia.height dia)
+
+          scaling = scaledImgWidth/dw
+
+  return $ (fmap getScaledDias) <$> dias
 
 savePng ::
      Maybe (Text, Text) -- File name

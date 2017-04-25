@@ -76,7 +76,7 @@ renderEditWidget fullHost pats
         idTxt = tshow fgtId
         ev2 = SaveFG <$ save
         editFGTEv = EditForeGroundTemplate fgtId <$
-          (leftmost [save,reset])
+          (leftmost [reset])
     ws <- webSocket ("ws://" <> fullHost <> "/edit/foreground/" <> idTxt) $
       def & webSocketConfig_send .~ eventMessage
 

@@ -36,7 +36,7 @@ getEditForeGroundR fgtID = do
   let fgtData = join $ decodeStrict <$>
                 foreGroundTemplateDBData <$> fgt
       pats = (map fst) <$> fgtData
-  dias <- liftIO $ mapM getPatternsDia pats
+  dias <- liftIO $ mapM getPatternsDiaScaled pats
   $logInfo $ (tshow $ isJust (join dias))
   $logInfo $ (tshow $ fgtData)
   mapM webSockets (webSocketServer fgtID <$> fgtData <*> (join dias))

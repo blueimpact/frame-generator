@@ -110,7 +110,7 @@ appWebSocketServer appSt = do
 
           let
             getPreview pats = do
-              dias <- liftIO $ getPatternsDia pats
+              dias <- liftIO $ getPatternsDiaScaled pats
 
               let resDia = getForeGround <$> dias <*> l
                   resImg = encodeToPng <$> resDia <*> pure 600

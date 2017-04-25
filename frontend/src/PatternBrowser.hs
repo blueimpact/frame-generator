@@ -101,7 +101,7 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
     getList = (\(ForeGroundListPreview lst) -> lst) <$> fgPreviewListEv
     -- Show Preview
     f (fgtId, pats, file) = do
-      divClass "col-md-1" $ do
+      divClass "col-md-2" $ do
         let url = "http://" <> fullHost
               <> file
         img url
@@ -114,7 +114,7 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
       -> FgtId
       -> m (Event t Message.Request)
     fgtBrowse grp fgtId = do
-      divClass "col-md-1" $ do
+      divClass "col-md-2" $ do
         let url = "http://" <> fullHost
               <> fgtemplatesDir <> tshow fgtId <> ".png"
         e <- img url
@@ -154,6 +154,7 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
           -- template list, select
           dyn $ zipDynWith fgtBrowse' fgtListDyn (join grpSelDyn)
 
+        divClass "h2" $ text "Previews"
         -- Apply template event
         ev2Dyn <- divClass "row" $ do
           -- preview pane
