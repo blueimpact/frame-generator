@@ -50,6 +50,23 @@ getPatternsDia pats = do
 
 scaledImgWidth = 50
 
+getPatternDiaScaled ::
+  PatternName
+  -> IO (Maybe (Diagram Rasterific))
+getPatternDiaScaled pat = do
+  dia <- getPatternDia pat
+  let getScaledDia dia =
+        if scaling < 1.0
+          then scale scaling dia
+          else dia
+        where
+          dw = (Dia.width dia)
+          dh = (Dia.height dia)
+
+          scaling = scaledImgWidth/dw
+  return $ getScaledDia <$> dia
+
+
 getPatternsDiaScaled :: NonEmpty PatternName ->
   IO (Maybe (NonEmpty (Diagram Rasterific)))
 getPatternsDiaScaled pats = do

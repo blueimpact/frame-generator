@@ -86,7 +86,7 @@ webSocketServer fgtID fgtData' dias' = do
           d <- liftIO $ readIORef fgtDataRef
           dias <- liftIO $ readIORef diasRef
 
-          dia <- liftIO $ getPatternDia pat
+          dia <- liftIO $ getPatternDiaScaled pat
           let newD = appendNE d (pat, defFGParams)
               defFGParams = ForeGroundParams 8 0 1.0 100
 

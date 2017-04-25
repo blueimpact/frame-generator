@@ -119,8 +119,8 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
               <> fgtemplatesDir <> tshow fgtId <> ".png"
         e <- img url
 
-        let pats = NE.nonEmpty $ concat $ ffor grp (\(g,fs) ->
-                     ffor fs (\f -> NE.fromList [(g,f)]))
+        let pats = NE.nonEmpty $ concat $ concat $ ffor grp (\(g,fs) ->
+                     ffor fs (\f -> [(g,f)]))
 
         let ev = fforMaybe (domEvent Click e)
                    (\_ -> PreviewForeGroundTemplate fgtId <$> pats)

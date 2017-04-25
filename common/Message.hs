@@ -23,7 +23,7 @@ data Request =
   | CloneForeGroundTemplate FgtId
   | DeleteForeGroundTemplate FgtId
   | DefaultPreview FgtId
-  | PreviewForeGroundTemplate FgtId (NonEmpty (NonEmpty PatternName))
+  | PreviewForeGroundTemplate FgtId (NonEmpty PatternName)
   | ApplyForeGroundTemplate FgtId (NonEmpty PatternName)
   | GetForeGroundList
   | EditForeGround FgId

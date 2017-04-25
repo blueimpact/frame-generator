@@ -17,6 +17,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
+import qualified Data.List
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Aeson
@@ -109,27 +110,34 @@ appWebSocketServer appSt = do
           fgt <- mylift $ runDB $ get $ toSqlKey fgtId
 
           let
+            l = (NE.map snd) <$> pl
+            pl :: Maybe (NonEmpty (PatternName, ForeGroundParams))
+            pl = join $ decodeStrict <$>
+              foreGroundTemplateDBData <$> fgt
+
+            perms = getAllPermutations patsList <$> (NE.length <$> l)
+
+            -- Apply the list of patterns to all layers
+            getPreview ::
+              NonEmpty (Text,Text)
+              -> IO (Maybe (FgtId, NonEmpty (Text,Text), Text))
             getPreview pats = do
               dias <- liftIO $ getPatternsDiaScaled pats
 
               let resDia = getForeGround <$> dias <*> l
                   resImg = encodeToPng <$> resDia <*> pure 600
-                  l = (NE.map snd) <$> pl
-                  pl :: Maybe (NonEmpty (PatternName, ForeGroundParams))
-                  pl = join $ decodeStrict <$>
-                    foreGroundTemplateDBData <$> fgt
               fname <- liftIO $ forM resImg (savePng Nothing)
               return $ (\f -> (fgtId,pats,f)) <$> fname
 
-          lst <- forM patsList getPreview
-          let msg = ForeGroundListPreviewT $ ForeGroundListPreview $
-                      catMaybes $ NE.toList lst
-          return $ Just msg
+          lst <- liftIO $ forM perms (mapM getPreview)
+          let msg = ForeGroundListPreviewT <$> (ForeGroundListPreview <$>
+                      (catMaybes <$> (NE.toList <$> lst)))
+          return $ msg
 
         (Just (ApplyForeGroundTemplate fgtId pats)) -> do
           fgt <- mylift $ runDB $ get $ toSqlKey fgtId
 
-          dias <- liftIO $ getPatternsDia pats
+          dias <- liftIO $ getPatternsDiaScaled pats
 
           let resDia = getForeGround <$> dias <*> l
               resImg = encodeToPng <$> resDia <*> pure 600
@@ -181,3 +189,17 @@ appWebSocketServer appSt = do
 
         (Just (DownloadForeGroundPng _)) -> return Nothing
         Nothing -> return Nothing
+
+
+-- Get all permutations for given number of layers from the groups
+getAllPermutations :: NonEmpty (Text,Text) -> Int -> NonEmpty (NonEmpty (Text,Text))
+getAllPermutations pats layers = NE.fromList perms
+  where
+    combs = combinations layers (NE.toList pats)
+    perms = concat $ map ((map NE.fromList).permutations) combs
+
+combinations 0 lst = [[]]
+combinations n lst = do
+    (x:xs) <- Data.List.tails lst
+    rest   <- combinations (n-1) xs
+    return $ x : rest
