@@ -179,18 +179,22 @@ layerControls save (layerId, (_, fgParam)) = do
           "Radius:" (radiusOffset fgParam)
             (1, 200, 1) updateResetEv
 
+      ev <- getPostBuild
       delete <- button "Delete Layer"
-      return $ leftmost [getEditMessage layerId (s,c,ro,ra)
+      return $ leftmost [getEditMessage layerId (s,c,ro,ra) ev
                , DeleteLayer layerId <$ delete]
 
 getEditMessage :: (Reflex t)
   => LayerId
   -> (RangeInput t, RangeInput t, RangeInput t, RangeInput t)
+  -> Event t ()
   -> Event t EditFGTemplate
-getEditMessage layerId (scale, count, rotate, radius) =
+getEditMessage layerId (scale, count, rotate, radius) pb =
   Edit layerId <$> anyEditEvent
   where
-    anyEditEvent = leftmost [ev1, ev2, ev3, ev4]
+    anyEditEvent = leftmost [ev1, ev2, ev3, ev4, pbEv]
+
+    pbEv = fst <$> attachPromptlyDyn params pb
 
     ev1 = attachPromptlyDynWith f params sEv
       where f p x = p { scaling = x}
