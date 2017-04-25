@@ -38,6 +38,7 @@ library
     , reflex-dom-contrib
     , uri-bytestring
     , lens
+    , data-default
   default-language:    Haskell2010
   ghc-options: -fno-warn-missing-signatures
 

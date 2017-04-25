@@ -65,9 +65,7 @@ appWebSocketServer appSt = do
 
         (Just (CreateForeGroundTemplate pat)) -> do
           key <- mylift $ runDB $ do
-            let layers = NE.fromList [(pat, defFGParams)]
-                defFGParams =
-                  ForeGroundParams 8 0 1.0 100
+            let layers = NE.fromList [(pat, def :: ForeGroundParams)]
             insert (ForeGroundTemplateDB $ enc layers)
           return $ Just $ NewForeGroundTemplateT $
             NewForeGroundTemplate (fromSqlKey key)
@@ -139,7 +137,7 @@ appWebSocketServer appSt = do
               pl :: Maybe (NonEmpty (PatternName, ForeGroundParams))
               pl = join $ decodeStrict <$>
                     foreGroundTemplateDBData <$> fgt
-              m = getMask 600 (MaskParams 4 4)
+              m = getMask 600 def
                 <$> resDia
 
               grps = map fst pats

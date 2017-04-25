@@ -31,7 +31,7 @@
 
 let f = { mkDerivation, base, bytestring, containers, file-embed
 , frame-generator-common, ghcjs-dom, reflex, reflex-dom, stdenv
-, text, reflex-dom-contrib, uri-bytestring, lens
+, text, reflex-dom-contrib, uri-bytestring, lens, data-default
 }:
 mkDerivation {
   pname = "frame-generator-frontend";
@@ -40,7 +40,7 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    base bytestring containers file-embed frame-generator-common
+    base bytestring containers file-embed frame-generator-common data-default
     ghcjs-dom reflex reflex-dom text reflex-dom-contrib uri-bytestring lens
   ];
   executableHaskellDepends = [ base ];
@@ -48,12 +48,13 @@ mkDerivation {
   license = stdenv.lib.licenses.bsd3;
 };
 
-  fg = (import ../common/default.nix) {inherit mkDerivation base aeson stdenv;};
+  fg = (import ../common/default.nix) {inherit mkDerivation base aeson stdenv
+        text data-default;};
   rc = (import ./reflex-dom-contrib) {inherit mkDerivation aeson base64-bytestring bifunctors
           data-default ghc ghcjs-base ghcjs-dom http-types lens mtl random readable reflex
           reflex-dom safe semigroups string-conv text these time transformers uri-bytestring webkitgtk3-javascriptcore; };
 
 in f {inherit mkDerivation base bytestring containers file-embed ghcjs-dom
-      reflex reflex-dom stdenv text uri-bytestring lens;
+      reflex reflex-dom stdenv text uri-bytestring lens data-default;
       frame-generator-common = fg;
       reflex-dom-contrib = rc;}

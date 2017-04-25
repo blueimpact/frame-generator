@@ -11,3 +11,4 @@ library
   build-depends:  base
                   , aeson
                   , text
+                  , data-default

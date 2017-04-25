@@ -9,6 +9,7 @@ import Data.Aeson
 import Data.Text (Text)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Int
+import Data.Default
 
 -- Common data
 
@@ -35,11 +36,17 @@ data ForeGroundParams = ForeGroundParams {
 }
   deriving (Generic, Show, Eq)
 
+instance Default ForeGroundParams where
+  def = ForeGroundParams 8 0 1.0 100
+
 data MaskParams = MaskParams {
     dilateValue     :: Int
   , blurValue       :: Int
 }
   deriving (Generic, Show, Eq)
+
+instance Default MaskParams where
+  def = MaskParams 4 4
 
 -- Values
 fgtemplatesDir :: Text

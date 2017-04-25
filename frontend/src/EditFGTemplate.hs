@@ -15,7 +15,7 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text                 as T
 import qualified Data.Text.Encoding        as T
-import Data.Monoid
+import Data.Semigroup
 import Data.Aeson
 import Data.Maybe
 import Control.Monad
@@ -88,12 +88,26 @@ renderEditWidget fullHost pats
     -- Controls
     ev1 <- elClass "table" "table" $
       elClass "tr" "" $ do
-        let l = NE.zip (NE.fromList [1..]) fgtData
-        editMsgs <- forM l (layerControls save)
-        -- Select pattern and add a layer
-        addLayerMsg <- miniPatternBrowser fullHost pats
+        rec
+          let lDyn = NE.toList <$> ((NE.zip (NE.fromList [1..])) <$> fgtDataDyn)
+              ev = leftmost $ [addLayerMsg, ev2]
+              ev2 = switchPromptlyDyn $ leftmost <$> editMsgs
+              handler (AddLayer pat) d = Just $ d <>
+                NE.fromList [(pat,def :: ForeGroundParams)]
+              handler (DeleteLayer layerId) d = NE.nonEmpty $
+                (NE.take (layerId - 1) d) ++ (NE.drop layerId d)
+              handler _ _ = Nothing
+              lc d = do
+                e <- dyn (layerControls save <$> d)
+                switchPromptly never e
 
-        return $ leftmost $ [addLayerMsg] ++ (NE.toList editMsgs)
+          fgtDataDyn <- foldDynMaybe handler fgtData ev
+
+          editMsgs <- simpleList lDyn lc
+          -- Select pattern and add a layer
+          addLayerMsg <- miniPatternBrowser fullHost pats
+
+        return ev
 
     -- Preview
     divClass "panel" $ do
