@@ -109,9 +109,9 @@ data PaginationEvents =
 
 doPagination ::
   (MonadWidget t m)
-  => Int
-  -> Dynamic t [a]
-  -> ([a] -> m (Event t b))
+  => Int  -- Number of items in a page
+  -> Dynamic t [a] -- List of items
+  -> ([a] -> m (Event t b)) -- Render widget
   -> m (Event t b)
 doPagination numOfPages dynList widget = do
   let
@@ -139,7 +139,7 @@ paginationBar ::
 paginationBar dynSize = do
   rec
     ev <- elAttr "nav" (("aria-label" =: "Page navigation")) $
-      elClass "ul" "pagination" $ do
+      elClass "ul" "pager" $ do
         ep <- el "li" $ do
           (e,_) <- elAttr' "a" (("aria-label" =: "Previous")) $
             elAttr "span" ("aria-hidden" =: "true") $ text "«"

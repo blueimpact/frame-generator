@@ -51,16 +51,17 @@ patternBrowseWidget fullHost patListDyn = do
           )
         return (leftmost eVs)
 
-    widget patList =
-      divClass "container" $ idTag "pattern_browser" $
-        divClass "row panel panel-primary" $ do
-          divClass "panel-heading" $ text "Patterns"
-          divClass "panel-body container" $ do
-            eVs <- (mapM f patList)
-            return $ leftmost (eVs)
+    widget patList = do
+      eVs <- (mapM f patList)
+      return $ leftmost (eVs)
 
 
-  evClick <- doPagination 3 patListDyn widget
+  evClick <- divClass "container" $ idTag "pattern_browser" $
+    divClass "row panel panel-primary" $ do
+      divClass "panel-heading" $ text "Patterns"
+      divClass "panel-body container" $
+        doPagination 3 patListDyn widget
+
   ev <- getPostBuild
   return $ enc $ leftmost [(GetPatternList <$ ev), evClick]
 
