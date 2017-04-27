@@ -27,6 +27,8 @@ import Reflex.Dom.Contrib.Widgets.EditInPlace
 import Data.Aeson
 import Data.Monoid
 import qualified CSSClass as C
+import qualified Data.Map as Map
+import Data.Maybe
 
 foreign import javascript unsafe "window['URL']['createObjectURL']($1)" createObjectURL_ :: Blob.Blob -> IO JS.JSVal
 
@@ -51,8 +53,11 @@ buttonE txt c = do
   ev <- button txt
   return (c <$ ev)
 
-img url = do
-  (e,_) <- elAttr' "a" (("href" =: "#") <> ("class" =: "thumbnail")) $
+img url = imgJump Nothing url
+
+imgJump jumpTag url = do
+  let href = fromMaybe "#" jumpTag
+  (e,_) <- elAttr' "a" (("href" =: href) <> ("class" =: "thumbnail")) $
     elAttr ("img") (("src" =: url)) blank
   return e
 
@@ -95,3 +100,72 @@ rangeInputWidgetWithTextEditAndReset
           <> ("step" =: tshow step))
 
   return ri
+
+idTag t = elAttr "div" (("id" =: t) <> ("style" =: "padding-top: 70px"))
+
+data PaginationEvents =
+  Prev | Next | Page Int
+  deriving (Show)
+
+doPagination ::
+  (MonadWidget t m)
+  => Int
+  -> Dynamic t [a]
+  -> ([a] -> m (Event t b))
+  -> m (Event t b)
+doPagination numOfPages dynList widget = do
+  let
+    lists = makeLists <$> dynList
+    makeLists [] = []
+    makeLists ls = [a] ++ makeLists b
+      where (a,b) = splitAt numOfPages ls
+    pages = Map.fromList <$> ((zip [1..]) <$> lists)
+    pagesCount = length <$> lists
+
+  rec
+    let currentPage = (\(ps,p) ->
+                         if Map.null ps
+                           then []
+                           else ps Map.! p) <$> (zipDyn pages page)
+    valEv <- dyn (widget <$> currentPage)
+    page <- paginationBar pagesCount
+  val <- switchPromptly never valEv
+  return val
+
+paginationBar ::
+  (MonadWidget t m)
+  => Dynamic t Int -- Number of pages
+  -> m (Dynamic t Int) -- Selected Page
+paginationBar dynSize = do
+  rec
+    ev <- elAttr "nav" (("aria-label" =: "Page navigation")) $
+      elClass "ul" "pagination" $ do
+        ep <- el "li" $ do
+          (e,_) <- elAttr' "a" (("aria-label" =: "Previous")) $
+            elAttr "span" ("aria-hidden" =: "true") $ text "«"
+          return $ Prev <$ domEvent Click e
+        let
+          f sel page = do
+            let c = if page == sel then "Active" else ""
+            elClass "li" c $ do
+              (e,_) <- elAttr' "a" Map.empty $
+                text $ tshow page
+              return $ Page page <$ domEvent Click e
+          pages = (((flip take) [1..]) <$> dynSize)
+          dynVal = (zipDyn pages dynPage)
+        evEvs <- dyn ((\(ps, s) -> mapM (f s) ps) <$> dynVal)
+        e <- switchPromptly never (leftmost <$> evEvs)
+
+        en <- el "li" $ do
+          (e,_) <- elAttr' "a" (("aria-label" =: "Next")) $
+            elAttr "span" ("aria-hidden" =: "true") $ text "»"
+          return $ Next <$ domEvent Click e
+
+        return $ leftmost $ [ep,e,en]
+
+    let handler (s,Prev) i = if i > 1 then Just (i - 1) else Nothing
+        handler (s,Next) i = if i < s then Just (i + 1) else Nothing
+        handler (s,(Page p)) i = if i /= p then Just p else Nothing
+    dynPage <- foldDynMaybe handler 1 (attachPromptlyDyn dynSize ev)
+
+  return dynPage

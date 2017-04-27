@@ -44,6 +44,7 @@ mainWidgetTop = do
   let
     url = "ws://" <> fullHost <> "/websocket"
 
+
   rec
     let
       patternList = (\(Message.PatternList lst) -> lst) <$>
@@ -52,22 +53,20 @@ mainWidgetTop = do
       fgtList = (\(Message.ForeGroundTemplateList lst) -> lst) <$>
         (getResponse ws)
 
-      wsSend = leftmost [req1, req2, enc req3, req4
-                        , enc req5, req6, req7]
+      wsSend = leftmost [enc navReq, req1, req2, req4
+                        , req6, req7]
 
     patListDyn <- holdDyn [] patternList
     fgtListDyn <- holdDyn [] fgtList
 
-    req1 <- patternBrowseWidget fullHost patternList
+    navReq <- navbar
 
-    req3 <- buttonE "Get FGT List" Message.GetForeGroundTemplateList
+    req1 <- patternBrowseWidget fullHost patListDyn
 
     req4 <- foreGroundTemplateBrowseWidget fullHost fgtList
 
     req2 <- editFGTemplateWidget fullHost patListDyn
       (getResponse ws) (getResponse ws)
-
-    req5 <- buttonE "Get FG List" Message.GetForeGroundList
 
     req6 <- foreGroundBrowseWidget fullHost (getResponse ws)
     req7 <- previewWidget fullHost patternList fgtListDyn (getResponse ws)
@@ -79,6 +78,29 @@ mainWidgetTop = do
     putDebugLnE (patternList) show
     putDebugLnE (fgtList) show
   return ()
+
+navbar :: (MonadWidget t m)
+  => m (Event t Message.Request)
+navbar = do
+  elClass "nav" "navbar navbar-default navbar-fixed-top" $
+    divClass "container" $ do
+      divClass "navbar-header" $ do
+        elAttr "a" (("class" =: "navbar-brand") <> ("href" =: "#")) $
+          text "Frame Generator"
+      divClass "navbar-collapse collapse" $
+        elClass "ul" "nav navbar-nav" $ do
+          elClass "li" "" $ elAttr "a" ("href" =: "#pattern_browser") $ text "Patterns"
+          e1 <- elClass "li" "" $ do
+            (e,_) <- elAttr' "a" ("href" =: "#template_browser") $ text "Templates"
+            return (Message.GetForeGroundTemplateList <$ (domEvent Click e))
+          e2 <- elClass "li" "" $ do
+            (e,_) <- elAttr' "a" ("href" =: "#foreground_browser") $ text "ForeGrounds"
+            return (Message.GetForeGroundList <$ (domEvent Click e))
+          e3 <- elClass "li" "" $ do
+            (e,_) <- elAttr' "a" ("href" =: "#preview_widget") $ text "Preview Widget"
+            return never
+          return $ leftmost [e1,e2,e3]
+
 
 getResponse ws =
   fforMaybe (_webSocket_recv ws)

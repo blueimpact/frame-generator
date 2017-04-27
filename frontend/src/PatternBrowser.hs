@@ -29,34 +29,38 @@ import qualified Data.ByteString.Lazy as BSL
 import Reflex.Dom.Contrib.Utils
 import Reflex.Dom.Contrib.Widgets.CheckboxList
 
-patternBrowseWidget fullHost patternListEv = do
+patternBrowseWidget fullHost patListDyn = do
 
   let
     getImgUrl grp file = "http://" <> fullHost
       <> patternsDir <> grp <> "/" <> file
 
-    f :: (MonadWidget t m) => (Text,[Text]) -> m [Event t Message.Request]
+    f :: (MonadWidget t m) => (Text,[Text]) -> m (Event t Message.Request)
     f (groupName, files) = do
       divClass "row panel panel-primary" $ do
         divClass "panel-heading" $ text groupName
-        forM files
+        eVs <- forM files
           (\file ->
              divClass "col-md-1" $ do
                text file
-               e <- img $ getImgUrl groupName file
+               e <- imgJump (Just "#edit-fgt-widget")
+                 $ getImgUrl groupName file
                return $
                  (CreateForeGroundTemplate (groupName, file))
                   <$ domEvent Click e
           )
+        return (leftmost eVs)
 
-  evDyn <- divClass "container" $
-    widgetHold (do {text "loading"; return [];}) $
-      sequence <$> ((map f) <$> patternListEv)
+    widget patList =
+      divClass "container" $ idTag "pattern_browser" $
+        divClass "row panel panel-primary" $ do
+          divClass "panel-heading" $ text "Patterns"
+          divClass "panel-body container" $ do
+            eVs <- (mapM f patList)
+            return $ leftmost (eVs)
 
-  let
-    evFlattened = leftmost <$> (concat <$> evDyn)
 
-  let evClick = switchPromptlyDyn evFlattened
+  evClick <- doPagination 3 patListDyn widget
   ev <- getPostBuild
   return $ enc $ leftmost [(GetPatternList <$ ev), evClick]
 
@@ -75,13 +79,16 @@ foreGroundTemplateBrowseWidget fullHost fgTListEv = do
           DeleteForeGroundTemplate fgtId
         let url = "http://" <> fullHost
               <> fgtemplatesDir <> tshow fgtId <> ".png"
-        img url
+        imgJump (Nothing) url
 
         return $ leftmost $
           [preview, edit, clone, delete]
 
-  evDyn <- divClass "container" $
-    widgetHold (do {return [];})
+  evDyn <- divClass "container" $ idTag "template_browser" $
+    divClass "panel panel-primary" $ do
+      divClass "panel-heading" $ text "Templates"
+      divClass "panel-body" $
+        widgetHold (do {return [];})
              ((mapM f) <$> fgTListEv)
 
   let evClick = switchPromptlyDyn (leftmost <$> evDyn)
@@ -105,8 +112,9 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
         let url = "http://" <> fullHost
               <> file
         img url
-        buttonE "Save" $
-          ApplyForeGroundTemplate fgtId pats
+        eDyn <- widgetHold (buttonE "Save" $
+          ApplyForeGroundTemplate fgtId pats) (never)
+        return $ switchPromptlyDyn eDyn
 
     -- Show Templates
     fgtBrowse :: (MonadWidget t m)
@@ -117,7 +125,7 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
       divClass "col-md-2" $ do
         let url = "http://" <> fullHost
               <> fgtemplatesDir <> tshow fgtId <> ".png"
-        e <- img url
+        e <- imgJump (Just "#preview") url
 
         let pats = NE.nonEmpty $ concat $ concat $ ffor grp (\(g,fs) ->
                      ffor fs (\f -> [(g,f)]))
@@ -132,8 +140,8 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
         then True
         else isJust (T.commonPrefixes t g)
 
-  evClick <- divClass "preview-widget container" $
-    divClass "panel" $ do
+  evClick <- divClass "preview-widget container" $ idTag "preview_widget" $
+    divClass "panel panel-primary" $ do
       divClass "panel-heading" $ text "Preview Widget"
       divClass "panel-body" $ do
 
@@ -154,7 +162,7 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
           -- template list, select
           dyn $ zipDynWith fgtBrowse' fgtListDyn (join grpSelDyn)
 
-        divClass "h2" $ text "Previews"
+        divClass "h2" $ idTag "preview" $ text "Previews"
         -- Apply template event
         ev2Dyn <- divClass "row" $ do
           -- preview pane
@@ -193,10 +201,10 @@ foreGroundBrowseWidget fullHost fgListEv = do
 
         return $ leftmost $
           [edit, delete]
-  evDyn <- divClass "container" $
-    divClass "panel" $ do
-      divClass "panel-heading" $ text "FG Browse Widget"
-      divClass "panel-body" $ divClass "row" $ do
+  evDyn <- divClass "container" $ idTag "foreground_browser" $
+    divClass "panel panel-primary" $ do
+      divClass "panel-heading" $ text "ForeGrounds"
+      divClass "panel-body row" $ do
         widgetHold (do {return [];})
           (sequence <$> ((map f) <$> getList))
 

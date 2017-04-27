@@ -2,3 +2,7 @@ img.preview-img {
     width: 100px;
     height: 100px;
 }
+body {
+    min-height: 2000px;
+    padding-top: 70px;
+}
