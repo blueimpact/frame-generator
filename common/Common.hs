@@ -33,11 +33,12 @@ data ForeGroundParams = ForeGroundParams {
   , rotationOffset  :: Double -- Deg
   , scaling         :: Double -- 1.0 - default
   , radiusOffset    :: Double -- %
+  , angleOffset     :: Double -- -0.5 to 0.5
 }
   deriving (Generic, Show, Eq)
 
 instance Default ForeGroundParams where
-  def = ForeGroundParams 8 0 1.0 100
+  def = ForeGroundParams 8 0 1.0 100 0
 
 data MaskParams = MaskParams {
     dilateValue     :: Int

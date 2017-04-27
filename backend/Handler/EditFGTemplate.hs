@@ -88,7 +88,7 @@ webSocketServer fgtID fgtData' dias' = do
 
           dia <- liftIO $ getPatternDiaScaled pat
           let newD = appendNE d (pat, defFGParams)
-              defFGParams = ForeGroundParams 8 0 1.0 100
+              defFGParams = def :: ForeGroundParams
 
               newDias = appendNE dias <$> dia
 

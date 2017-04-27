@@ -165,7 +165,7 @@ layerControls save (layerId, (_, fgParam)) = do
 
         s <- rangeInputWidgetWithTextEditAndReset
           "Scale:" (scaling fgParam)
-            (0.1, 2.0, 0.05) updateResetEv
+            (0.1, 2.0, 0.01) updateResetEv
 
         c <- rangeInputWidgetWithTextEditAndReset
           "Count:" (fromIntegral (patternCount fgParam))
@@ -179,20 +179,24 @@ layerControls save (layerId, (_, fgParam)) = do
           "Radius:" (radiusOffset fgParam)
             (1, 200, 1) updateResetEv
 
+        ao <- rangeInputWidgetWithTextEditAndReset
+          "Angle:" (angleOffset fgParam)
+            (-0.5, 0.5, 0.01) updateResetEv
+
       ev <- getPostBuild
       delete <- button "Delete Layer"
-      return $ leftmost [getEditMessage layerId (s,c,ro,ra) ev
+      return $ leftmost [getEditMessage layerId (s,c,ro,ra,ao) ev
                , DeleteLayer layerId <$ delete]
 
 getEditMessage :: (Reflex t)
   => LayerId
-  -> (RangeInput t, RangeInput t, RangeInput t, RangeInput t)
+  -> (RangeInput t, RangeInput t, RangeInput t, RangeInput t, RangeInput t)
   -> Event t ()
   -> Event t EditFGTemplate
-getEditMessage layerId (scale, count, rotate, radius) pb =
+getEditMessage layerId (scale, count, rotate, radius, angle) pb =
   Edit layerId <$> anyEditEvent
   where
-    anyEditEvent = leftmost [ev1, ev2, ev3, ev4, pbEv]
+    anyEditEvent = leftmost [ev1, ev2, ev3, ev4, ev5, pbEv]
 
     pbEv = fst <$> attachPromptlyDyn params pb
 
@@ -208,15 +212,20 @@ getEditMessage layerId (scale, count, rotate, radius) pb =
     ev4 = attachPromptlyDynWith f params raEv
       where f p x = p { radiusOffset = x}
 
+    ev5 = attachPromptlyDynWith f params aoEv
+      where f p x = p { angleOffset = x}
+
     sEv  = ftod $ updated (_rangeInput_value scale)
     cEv  = ceiling <$> updated (_rangeInput_value count)
     roEv = ftod $ updated (_rangeInput_value rotate)
     raEv = ftod $ updated (_rangeInput_value radius)
+    aoEv = ftod $ updated (_rangeInput_value angle)
 
     params = ForeGroundParams
       <$> (ceiling <$> _rangeInput_value count)
       <*> ftod (_rangeInput_value rotate)
       <*> ftod (_rangeInput_value scale)
       <*> ftod (_rangeInput_value radius)
+      <*> ftod (_rangeInput_value angle)
 
     ftod f = fmap realToFrac f

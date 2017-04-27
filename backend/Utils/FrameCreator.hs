@@ -207,7 +207,7 @@ getForeGroundLayer ::
   -> ForeGroundParams
   -> Diagram Rasterific
 getForeGroundLayer img
-  (ForeGroundParams num rotOffset scaling radiusOffset)
+  (ForeGroundParams num rotOffset scaling radiusOffset angleOffset)
   = mconcat $ map snd finalList
   where
     tmplt = Horizontal
@@ -227,7 +227,7 @@ getForeGroundLayer img
 
     rotatedList :: [(Int, Diagram B)]
     rotatedList = map (\(n,i) ->
-      (n,rotateBy ((fromIntegral n)/(fromIntegral num)) i)) imgL1
+      (n,rotateBy ((angleOffset + (fromIntegral n))/(fromIntegral num)) i)) imgL1
 
     rotOffsetApplied :: [(Int, Diagram B)]
     rotOffsetApplied = map (\(n,i) ->
@@ -241,4 +241,4 @@ getForeGroundLayer img
           x n = g sin n
           y n = g cos n
           g f n = radiusAfterOffset*f
-            ((((-2)*(fromIntegral n))/(fromIntegral num))*pi)
+            ((((-2)*(angleOffset + (fromIntegral n))) /(fromIntegral num))*pi)
