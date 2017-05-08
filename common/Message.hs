@@ -29,6 +29,8 @@ data Request =
     (Maybe (NonEmpty PatternName))
   | ApplyForeGroundTemplate FgtId
     (NonEmpty PatternName)
+  | SaveForeGround
+    ForeGroundData
   | GetForeGroundList
   | EditForeGround FgId
   | DeleteForeGround FgId

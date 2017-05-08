@@ -91,33 +91,44 @@ renderEditWidget fullHost pats
 
 
     -- Controls
-    ev1 <- elClass "table" "table" $
+    (ev1,fgtDataDyn) <- elClass "table" "table" $
       elClass "tr" "" $ do
         rec
-          let lDyn = NE.toList <$> ((NE.zip (NE.fromList [1..])) <$> fgtDataDyn)
+          let lDyn = NE.toList <$> ((NE.zip (NE.fromList [1..])) <$> (uniqDyn fgtDataDynLight))
               ev = leftmost $ [addLayerMsg, ev2]
               ev2 = switchPromptlyDyn $ leftmost <$> editMsgs
-              handler (AddLayer pat) d = Just $ d <>
-                NE.fromList [(pat,def :: ForeGroundParams)]
-              handler (DeleteLayer layerId) d = NE.nonEmpty $
-                (NE.take (layerId - 1) d) ++ (NE.drop layerId d)
-              handler (Edit layerId params) d = if newD /= d then Just newD else Nothing
-                where newD = Control.Lens.imap
+
+              handler (AddLayer pat) (d,_) = Just (dNew,dNew)
+                where
+                  dNew = d <> NE.fromList [(pat,def :: ForeGroundParams)]
+
+              handler (DeleteLayer layerId) (d,_) = (,) <$> dNew <*> dNew
+                where
+                  dNew = NE.nonEmpty $
+                    (NE.take (layerId - 1) d) ++ (NE.drop layerId d)
+
+              handler (Edit layerId params) (d,dOld) = Just (dNew,dOld)
+                where
+                  dNew = Control.Lens.imap
                         (\i a@(p,_) -> if (i + 1) == layerId
                           then (p,params)
                           else a) d
               handler _ _ = Nothing
+
               lc d = do
                 e <- dyn (layerControls save <$> d)
                 switchPromptly never e
 
-          fgtDataDyn <- foldDynMaybe handler fgtData ev
+              (fgtDataDyn, fgtDataDynLight) = splitDynPure fgtDataDynTuple
+          -- DynLight only change on Add/Delete
+          -- On edit it does not change as we need to be able to reset
+          fgtDataDynTuple <- foldDynMaybe handler (fgtData,fgtData) ev
 
           editMsgs <- simpleList lDyn lc
           -- Select pattern and add a layer
           addLayerMsg <- miniPatternBrowser fullHost pats
 
-        return ev
+        return (ev, fgtDataDyn)
 
     -- Preview
     divClass "panel" $ do
@@ -133,8 +144,11 @@ renderEditWidget fullHost pats
     reset <- button "Reset All"
     -- Race in save signal, both WS fire
     save <- button "Save"
+    saveAsFG <- button "Save as ForeGround"
 
-  return editFGTEv
+    let saveFGEv = SaveForeGround <$> ForeGroundData <$> (tagDyn fgtDataDyn saveAsFG)
+
+  return $ leftmost [editFGTEv, saveFGEv]
 
 miniPatternBrowser ::
   (MonadWidget t m)

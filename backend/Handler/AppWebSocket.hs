@@ -23,6 +23,7 @@ import qualified Data.Text as T
 import Data.Aeson
 import Database.Persist.Sql (fromSqlKey, toSqlKey)
 
+import System.Random
 
 getAppWebSocket :: Handler Html
 getAppWebSocket = do
@@ -134,33 +135,38 @@ appWebSocketServer appSt = do
                       (catMaybes (NE.toList lst)))
           return $ Just msg
 
+        (Just (SaveForeGround (ForeGroundData fgtData))) -> do
+          let pats = NE.map fst fgtData
+              l = NE.map snd fgtData
+
+          rnd <- liftIO $ randomRIO (0,maxBound::Int64)
+          fNames <- liftIO $ makeFGAndSave rnd pats l
+
+          let
+              fname = fst <$> fNames
+              maskName = snd <$> fNames
+              d = enc (ForeGroundData fgtData)
+          let fg = ForeGroundDB d <$> fname <*> maskName
+          mylift $ runDB $ mapM insert fg
+
+          return Nothing
+
         (Just (ApplyForeGroundTemplate fgtId pats)) -> do
           fgt <- mylift $ runDB $ get $ toSqlKey fgtId
 
-          dias <- liftIO $ getPatternsDiaScaled pats
-
-          let resDia = getForeGround <$> dias <*> l
-              resImg = encodeToPng <$> resDia <*> pure 600
+          let
               l = (NE.map snd) <$> pl
               pl :: Maybe (NonEmpty (PatternName, ForeGroundParams))
               pl = join $ decodeStrict <$>
                     foreGroundTemplateDBData <$> fgt
-              m = getMask 600 def
-                <$> resDia
-
-              grps = map fst pats
-              name = concat $ intersperse "_" $ NE.cons (tshow fgtId) fnames
-              fnames = (map ((T.dropEnd 4).snd) pats) -- remove .png
-              dir = (T.concat $ NE.toList $ NE.intersperse "_" grps) <> "/"
 
               d = enc <$> (ForeGroundData <$> (NE.zip pats <$> l))
-              dirSave = foregroundDir <> dir
-
-          fname <- liftIO $ forM resImg (savePng (Just (dirSave,name)))
-
-          maskName <- liftIO $ forM m (savePng (Just (dirSave,name <> "_mask")))
+          fNames <- liftIO $ mapM (makeFGAndSave fgtId pats) l
 
           let fg = ForeGroundDB <$> d <*> fname <*> maskName
+              fname = fst <$> join fNames
+              maskName = snd <$> join fNames
+
           mylift $ runDB $ mapM insert fg
 
           return Nothing
@@ -212,3 +218,28 @@ getAllPermutations l1 l2 l3 =
     l1List = NE.toList l1
     threeLayers xl yl zl = NE.fromList ([(NE.fromList [x,y,z]) | x <- xl, y <- yl, z <- zl])
     twoLayers xl yl = NE.fromList ([(NE.fromList [x,y]) | x <- xl, y <- yl])
+
+makeFGAndSave ::
+     FgtId
+  -> NonEmpty (Text,Text)
+  -> NonEmpty ForeGroundParams
+  -> IO (Maybe (Text,Text))
+makeFGAndSave fgtId pats l = do
+  dias <- getPatternsDiaScaled pats
+
+  let resDia = getForeGround <$> dias <*> pure l
+      resImg = encodeToPng <$> resDia <*> pure 600
+      m = getMask 600 def
+        <$> resDia
+      grps = map fst pats
+      name = concat $ intersperse "_" $ NE.cons (tshow fgtId) fnames
+      fnames = (map ((T.dropEnd 4).snd) pats) -- remove .png
+      dir = (T.concat $ NE.toList $ NE.intersperse "_" grps) <> "/"
+
+      dirSave = foregroundDir <> dir
+
+  fname <- forM resImg (savePng (Just (dirSave,name)))
+
+  maskName <- forM m (savePng (Just (dirSave,name <> "_mask")))
+
+  return $ (,) <$> fname <*> maskName
