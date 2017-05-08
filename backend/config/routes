@@ -4,6 +4,8 @@
 
 /              HomeR GET
 
+/uploadpatterns                 UploadPatternR GET POST
+
 /edit/foreground/#ForeGroundTemplateDBId  EditForeGroundR GET
 
 /admin                          AdminR GET

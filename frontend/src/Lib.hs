@@ -99,6 +99,8 @@ navbar = do
           e3 <- elClass "li" "" $ do
             (e,_) <- elAttr' "a" ("href" =: "#preview_widget") $ text "Preview Widget"
             return never
+          elClass "li" "" $
+            elAttr "a" ("href" =: "/uploadpatterns") $ text "Upload Patterns"
           return $ leftmost [e1,e2,e3]
 
 
