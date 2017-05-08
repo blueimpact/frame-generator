@@ -92,6 +92,11 @@ renderEditWidget fullHost pats
                 NE.fromList [(pat,def :: ForeGroundParams)]
               handler (DeleteLayer layerId) d = NE.nonEmpty $
                 (NE.take (layerId - 1) d) ++ (NE.drop layerId d)
+              handler (Edit layerId params) d = if newD /= d then Just newD else Nothing
+                where newD = Control.Lens.imap
+                        (\i a@(p,_) -> if (i + 1) == layerId
+                          then (p,params)
+                          else a) d
               handler _ _ = Nothing
               lc d = do
                 e <- dyn (layerControls save <$> d)
