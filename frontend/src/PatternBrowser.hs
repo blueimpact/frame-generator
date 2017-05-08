@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module PatternBrowser where
 
 import Reflex.Dom
@@ -96,7 +97,7 @@ foreGroundTemplateBrowseWidget fullHost fgTListEv = do
 
   return $ enc evClick
 
-previewWidget ::
+previewWidget :: forall t m .
   (MonadWidget t m)
   => Text
   -> Event t [(Text,[Text])]
@@ -107,6 +108,12 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
 
   let
     getList = (\(ForeGroundListPreview lst) -> lst) <$> fgPreviewListEv
+
+    filtFun t (g,_) =
+      if T.null t
+        then True
+        else isJust (T.commonPrefixes t g)
+
     -- Show Preview
     f (fgtId, pats, file) = do
       divClass "col-md-2" $ do
@@ -119,35 +126,36 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
 
     -- Show Templates
     fgtBrowse :: (MonadWidget t m)
-      => [(Text,[Text])]
+      => ([(Text,[Text])], [(Text,[Text])], [(Text,[Text])])
       -> FgtId
       -> m (Event t Message.Request)
-    fgtBrowse grp fgtId = do
+    fgtBrowse (l1,l2,l3) fgtId = do
       divClass "col-md-2" $ do
         let url = "http://" <> fullHost
               <> fgtemplatesDir <> tshow fgtId <> ".png"
         e <- imgJump (Just "#preview") url
 
-        let pats = NE.nonEmpty $ concat $ concat $ ffor grp (\(g,fs) ->
+        let pats grp = NE.nonEmpty $ concat $ concat $ ffor grp (\(g,fs) ->
                      ffor fs (\f -> [(g,f)]))
+            l1Pats = pats l1
+            l2Pats = pats l2
+            l3Pats = pats l3
 
         let ev = fforMaybe (domEvent Click e)
-                   (\_ -> PreviewForeGroundTemplate fgtId <$> pats)
+                   (\_ -> (PreviewForeGroundTemplate fgtId <$> l1Pats
+                     <*> pure l2Pats <*> pure l3Pats))
         return ev
 
     fgtBrowse' fgtIds grp = mapM (fgtBrowse grp) fgtIds
-    filtFun t (g,_) =
-      if T.null t
-        then True
-        else isJust (T.commonPrefixes t g)
 
-  evClick <- divClass "preview-widget container" $ idTag "preview_widget" $
-    divClass "panel panel-primary" $ do
-      divClass "panel-heading" $ text "Preview Widget"
-      divClass "panel-body" $ do
-
-        grpSelDyn <- divClass "row" $ do
+    -- Show selector for 3 layers
+    layerPatternGroupSelector :: (MonadWidget t m)
+      => m (Dynamic t ([(Text,[Text])],[(Text,[Text])],[(Text,[Text])]))
+    layerPatternGroupSelector = do
+      divClass "row" $ el "table" $ el "tr" $ do
+        (grpSelDyn1 :: Dynamic t (Dynamic t [(Text,[Text])])) <- el "td" $ do
           -- Group list, checkbox
+          text "Layer 1"
           ti <- textInput def
           widgetHold (return (constDyn [])) $ (\pats -> do
             w <- checkboxList fst
@@ -158,10 +166,45 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
               pats
             return $ value w) <$> patternList
 
+        grpSelDyn2 <- el "td" $ do
+          -- Group list, checkbox
+          text "Layer 2"
+          ti <- textInput def
+          widgetHold (return (constDyn [])) $ (\pats -> do
+            w <- checkboxList fst
+              filtFun
+              never
+              (value ti)
+              S.empty
+              pats
+            return $ value w) <$> patternList
+
+        grpSelDyn3 <- el "td" $ do
+          -- Group list, checkbox
+          text "Layer 3"
+          ti <- textInput def
+          widgetHold (return (constDyn [])) $ (\pats -> do
+            w <- checkboxList fst
+              filtFun
+              never
+              (value ti)
+              S.empty
+              pats
+            return $ value w) <$> patternList
+        return $ zipDynWith (\a (b,c) -> (a,b,c)) (join grpSelDyn1)
+          (zipDyn (join grpSelDyn2) (join grpSelDyn3))
+
+  -- Widget Code
+  evClick <- divClass "preview-widget container" $ idTag "preview_widget" $
+    divClass "panel panel-primary" $ do
+      divClass "panel-heading" $ text "Preview Widget"
+      divClass "panel-body" $ do
+        grpSelDyn <- layerPatternGroupSelector
+
         -- Select new template event
         ev1' <- divClass "row" $
           -- template list, select
-          dyn $ zipDynWith fgtBrowse' fgtListDyn (join grpSelDyn)
+          dyn $ zipDynWith fgtBrowse' fgtListDyn grpSelDyn
 
         divClass "h2" $ idTag "preview" $ text "Previews"
         -- Apply template event
@@ -173,7 +216,9 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
               (sequence <$> ((map f) <$> getList))
 
         ev1 <- switchPromptly never (leftmost <$> ev1')
-        let ev2 = switchPromptlyDyn $ leftmost <$> ev2Dyn
+        let
+          ev2 :: (Reflex t) => Event t Message.Request
+          ev2 = switchPromptlyDyn $ leftmost <$> ev2Dyn
         return $ leftmost [ev1,ev2]
 
   return $ enc evClick

@@ -23,12 +23,53 @@ data Request =
   | CloneForeGroundTemplate FgtId
   | DeleteForeGroundTemplate FgtId
   | DefaultPreview FgtId
-  | PreviewForeGroundTemplate FgtId (NonEmpty PatternName)
-  | ApplyForeGroundTemplate FgtId (NonEmpty PatternName)
+  | PreviewForeGroundTemplate FgtId
+    (NonEmpty PatternName)
+    (Maybe (NonEmpty PatternName))
+    (Maybe (NonEmpty PatternName))
+  | ApplyForeGroundTemplate FgtId
+    (NonEmpty PatternName)
   | GetForeGroundList
   | EditForeGround FgId
   | DeleteForeGround FgId
   | DownloadForeGroundPng [FgId]
+  deriving (Generic, Show)
+
+data family Response a
+
+data instance Response PatternListT = PatternList [(Text, [Text])]
+  deriving (Generic, Show)
+
+data instance Response ForeGroundTemplateListT =
+  ForeGroundTemplateList [FgtId]
+  deriving (Generic, Show)
+
+data instance Response NewForeGroundTemplateT =
+  NewForeGroundTemplate FgtId
+  deriving (Generic, Show)
+
+data instance Response ForeGroundTemplateDataT =
+  ForeGroundTemplateDataRes FgtId ForeGroundTemplateData
+  deriving (Generic, Show)
+
+data instance Response ForeGroundListPreviewT =
+  ForeGroundListPreview [(FgtId, NonEmpty PatternName, FileName)]
+  deriving (Generic, Show)
+
+data instance Response ForeGroundListT =
+  ForeGroundList [(FgId, FileName)]
+  deriving (Generic, Show)
+
+data instance Response NewForeGroundT =
+  NewForeGround FgId -- response to ApplyForeGroundTemplate
+  deriving (Generic, Show)
+
+data instance Response ForeGroundDataResT =
+  ForeGroundDataRes ForeGroundData
+  deriving (Generic, Show)
+
+data instance Response DownloadForeGroundPngLinkT =
+  DownloadForeGroundPngLink Text
   deriving (Generic, Show)
 
 -- Response Tags
@@ -95,43 +136,6 @@ instance GetResponse DownloadForeGroundPngLinkT where
   getResponse' (DownloadForeGroundPngLinkT l) = Just l
   getResponse' _ = Nothing
 
-
-data family Response a
-
-data instance Response PatternListT = PatternList [(Text, [Text])]
-  deriving (Generic, Show)
-
-data instance Response ForeGroundTemplateListT =
-  ForeGroundTemplateList [FgtId]
-  deriving (Generic, Show)
-
-data instance Response NewForeGroundTemplateT =
-  NewForeGroundTemplate FgtId
-  deriving (Generic, Show)
-
-data instance Response ForeGroundTemplateDataT =
-  ForeGroundTemplateDataRes FgtId ForeGroundTemplateData
-  deriving (Generic, Show)
-
-data instance Response ForeGroundListPreviewT =
-  ForeGroundListPreview [(FgtId, NonEmpty PatternName, FileName)]
-  deriving (Generic, Show)
-
-data instance Response ForeGroundListT =
-  ForeGroundList [(FgId, FileName)]
-  deriving (Generic, Show)
-
-data instance Response NewForeGroundT =
-  NewForeGround FgId -- response to ApplyForeGroundTemplate
-  deriving (Generic, Show)
-
-data instance Response ForeGroundDataResT =
-  ForeGroundDataRes ForeGroundData
-  deriving (Generic, Show)
-
-data instance Response DownloadForeGroundPngLinkT =
-  DownloadForeGroundPngLink Text
-  deriving (Generic, Show)
 
 
 -- Client side requests

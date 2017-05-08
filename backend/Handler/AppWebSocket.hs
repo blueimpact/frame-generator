@@ -106,7 +106,7 @@ appWebSocketServer appSt = do
                       []
           return $ Just msg
 
-        (Just (PreviewForeGroundTemplate fgtId patsList)) -> do
+        (Just (PreviewForeGroundTemplate fgtId l1 l2 l3)) -> do
           fgt <- mylift $ runDB $ get $ toSqlKey fgtId
 
           let
@@ -115,7 +115,7 @@ appWebSocketServer appSt = do
             pl = join $ decodeStrict <$>
               foreGroundTemplateDBData <$> fgt
 
-            perms = getAllPermutations patsList <$> (NE.length <$> l)
+            perms = getAllPermutations l1 l2 l3
 
             -- Apply the list of patterns to all layers
             getPreview ::
@@ -129,10 +129,10 @@ appWebSocketServer appSt = do
               fname <- liftIO $ forM resImg (savePng Nothing)
               return $ (\f -> (fgtId,pats,f)) <$> fname
 
-          lst <- liftIO $ forM perms (mapM getPreview)
-          let msg = ForeGroundListPreviewT <$> (ForeGroundListPreview <$>
-                      (catMaybes <$> (NE.toList <$> lst)))
-          return $ msg
+          lst <- liftIO $ forM perms (getPreview)
+          let msg = ForeGroundListPreviewT (ForeGroundListPreview
+                      (catMaybes (NE.toList lst)))
+          return $ Just msg
 
         (Just (ApplyForeGroundTemplate fgtId pats)) -> do
           fgt <- mylift $ runDB $ get $ toSqlKey fgtId
@@ -191,15 +191,18 @@ appWebSocketServer appSt = do
         Nothing -> return Nothing
 
 
+getAllPermutations ::
+     NonEmpty (Text,Text)
+  -> Maybe (NonEmpty (Text,Text))
+  -> Maybe (NonEmpty (Text,Text))
+  -> NonEmpty (NonEmpty (Text,Text))
 -- Get all permutations for given number of layers from the groups
-getAllPermutations :: NonEmpty (Text,Text) -> Int -> NonEmpty (NonEmpty (Text,Text))
-getAllPermutations pats layers = NE.fromList perms
+getAllPermutations l1 l2 l3 =
+  case (l2,l3) of
+    (Just y, Just z) -> threeLayers l1List (NE.toList y) (NE.toList z)
+    (Just y, Nothing) -> twoLayers l1List (NE.toList y)
+    _ -> NE.fromList $ map (\x -> NE.fromList [x]) l1List
   where
-    combs = combinations layers (NE.toList pats)
-    perms = concat $ map ((map NE.fromList).permutations) combs
-
-combinations 0 lst = [[]]
-combinations n lst = do
-    (x:xs) <- Data.List.tails lst
-    rest   <- combinations (n-1) xs
-    return $ x : rest
+    l1List = NE.toList l1
+    threeLayers xl yl zl = NE.fromList ([(NE.fromList [x,y,z]) | x <- xl, y <- yl, z <- zl])
+    twoLayers xl yl = NE.fromList ([(NE.fromList [x,y]) | x <- xl, y <- yl])

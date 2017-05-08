@@ -81,10 +81,6 @@ renderEditWidget fullHost pats
       def & webSocketConfig_send .~ eventMessage
 
 
-    reset <- button "Reset All"
-    -- Race in save signal, both WS fire
-    save <- button "Save"
-
     -- Controls
     ev1 <- elClass "table" "table" $
       elClass "tr" "" $ do
@@ -118,7 +114,11 @@ renderEditWidget fullHost pats
       urlEv <- performEvent myImgUrl
       urlDyn <- holdDyn "dummy" urlEv
       let dynAttr = ffor urlDyn (\u -> ("src" =: u))
-      divClass "edit-fgt-widget-live-preview" $ elDynAttr "img" dynAttr $ return ()
+      divClass "center-block" $ elDynAttr "img" dynAttr $ return ()
+
+    reset <- button "Reset All"
+    -- Race in save signal, both WS fire
+    save <- button "Save"
 
   return editFGTEv
 
