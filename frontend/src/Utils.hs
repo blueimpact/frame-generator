@@ -56,8 +56,8 @@ buttonE txt c = do
 img url = imgJump Nothing url
 
 imgJump jumpTag url = do
-  let href = fromMaybe "#" jumpTag
-  (e,_) <- elAttr' "a" (("href" =: href) <> ("class" =: "thumbnail")) $
+  let href = fromMaybe (Map.empty) ((\t -> ("href" =: t)) <$> jumpTag)
+  (e,_) <- elAttr' "a" (href <> ("class" =: "thumbnail")) $
     elAttr ("img") (("src" =: url)) blank
   return e
 
