@@ -20,12 +20,8 @@ type FgId = Int64
 type LayerId = Int
 
 data PatternShape = Horizontal | Vertical | Diagnol
-data ForeGroundTemplateData = ForeGroundTemplateData
+data ForeGroundData = ForeGroundData
   (NonEmpty (PatternName, ForeGroundParams))
-  deriving (Generic, Show)
-
-data ForeGroundData = ForeGroundData FgtId
-  (NonEmpty PatternName)
   deriving (Generic, Show)
 
 data ForeGroundParams = ForeGroundParams {
@@ -66,11 +62,6 @@ instance ToJSON ForeGroundData where
     toEncoding = genericToEncoding defaultOptions
 
 instance FromJSON ForeGroundData
-
-instance ToJSON ForeGroundTemplateData where
-    toEncoding = genericToEncoding defaultOptions
-
-instance FromJSON ForeGroundTemplateData
 
 instance ToJSON ForeGroundParams where
     toEncoding = genericToEncoding defaultOptions

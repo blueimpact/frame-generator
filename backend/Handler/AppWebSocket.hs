@@ -76,7 +76,7 @@ appWebSocketServer appSt = do
             get (toSqlKey fgtId)
           let msg = ForeGroundTemplateDataT
                 <$> ForeGroundTemplateDataRes fgtId
-                      <$> (ForeGroundTemplateData <$> d)
+                      <$> (ForeGroundData <$> d)
               d = join $ decodeStrict <$>
                 foreGroundTemplateDBData <$> fgt
           return $ msg
@@ -153,14 +153,14 @@ appWebSocketServer appSt = do
               fnames = (map ((T.dropEnd 4).snd) pats) -- remove .png
               dir = (T.concat $ NE.toList $ NE.intersperse "_" grps) <> "/"
 
-              d = enc $ ForeGroundData fgtId pats
+              d = enc <$> (ForeGroundData <$> (NE.zip pats <$> l))
               dirSave = foregroundDir <> dir
 
           fname <- liftIO $ forM resImg (savePng (Just (dirSave,name)))
 
           maskName <- liftIO $ forM m (savePng (Just (dirSave,name <> "_mask")))
 
-          let fg = ForeGroundDB d <$> fname <*> maskName
+          let fg = ForeGroundDB <$> d <*> fname <*> maskName
           mylift $ runDB $ mapM insert fg
 
           return Nothing
@@ -176,12 +176,18 @@ appWebSocketServer appSt = do
           return $ Just msg
 
         (Just (EditForeGround fgId)) -> do
-          fg <- mylift $ runDB $ get $ toSqlKey fgId
+          key <- mylift $ runDB $ do
+            fg <- get $ ((toSqlKey fgId) :: Key ForeGroundDB)
 
-          let msg = ForeGroundDataResT <$> ForeGroundDataRes <$>
-                  (join $ decodeStrict <$> (foreGroundDBData <$> fg))
+            let
+                new = ForeGroundTemplateDB <$> (foreGroundDBData <$> fg)
 
-          return msg
+            forM new insert
+
+          let msg = NewForeGroundTemplateT
+                <$> NewForeGroundTemplate
+                <$> (fromSqlKey <$> key)
+          return $ msg
 
         (Just (DeleteForeGround fgId)) -> do
           mylift $ runDB $ delete (( toSqlKey fgId) :: Key ForeGroundDB)

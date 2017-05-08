@@ -49,7 +49,7 @@ data instance Response NewForeGroundTemplateT =
   deriving (Generic, Show)
 
 data instance Response ForeGroundTemplateDataT =
-  ForeGroundTemplateDataRes FgtId ForeGroundTemplateData
+  ForeGroundTemplateDataRes FgtId ForeGroundData
   deriving (Generic, Show)
 
 data instance Response ForeGroundListPreviewT =

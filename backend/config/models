@@ -11,7 +11,7 @@ Email
     UniqueEmail email
 
 ForeGroundTemplateDB
-    data ByteString -- ForeGroundTemplateData
+    data ByteString -- ForeGroundData
     deriving Show
 
 ForeGroundDB

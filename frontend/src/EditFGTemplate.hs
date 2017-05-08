@@ -18,6 +18,7 @@ import qualified Data.Text.Encoding        as T
 import Data.Semigroup
 import Data.Aeson
 import Data.Maybe
+import Control.Lens
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.List.NonEmpty (NonEmpty)
@@ -56,20 +57,28 @@ editFGTemplateWidget fullHost patListDyn newFGTemplEv fgtDataEv' = do
         divClass "panel-body" $
           renderEditWidget fullHost patListDyn d
 
-  evDyn <- widgetHold (do {return never;}) (f <$> fgtDataEv)
+  evDyn <- idTag "edit-fgt-widget" $
+    widgetHold (do {return never;}) (f <$> fgtDataEv)
 
   let evClick = switchPromptlyDyn evDyn
 
   return $ enc $ leftmost [editFGTEv, evClick]
 
+-- On save
+--   - Send SaveFG to server
+--   - Capture controls value for reset
+-- On Add Layer
+--   - Send AddLayer to server
+--   - Add a layer to local fgtDataDyn
+--
 renderEditWidget ::
   (MonadWidget t m)
   => Text
   -> Dynamic t ([(Text,[Text])])
-  -> (FgtId, ForeGroundTemplateData)
+  -> (FgtId, ForeGroundData)
   -> m (Event t Message.Request)
 renderEditWidget fullHost pats
-  (fgtId, (ForeGroundTemplateData fgtData)) = do
+  (fgtId, (ForeGroundData fgtData)) = do
   rec
     let eventMessage = enc $ leftmost [ev1,ev2]
 
