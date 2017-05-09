@@ -1,5 +1,5 @@
 name:              frame-generator-backend
-version:           0.1.0
+version:           1.0.0
 cabal-version:     >= 1.8
 build-type:        Simple
 
@@ -109,7 +109,7 @@ library
                  , lens
                  , ghc-prim
                  , process
-                 , frame-generator-common      >= 0.1 && < 0.2
+                 , frame-generator-common      >= 1.0 && < 1.1
 
 executable         frame-generator-backend
     if flag(library-only)

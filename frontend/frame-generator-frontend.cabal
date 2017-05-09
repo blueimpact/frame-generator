@@ -1,5 +1,5 @@
 name: frame-generator-frontend
-version: 0.1.0
+version: 1.0.0
 cabal-version: >=1.10
 build-type: Simple
 copyright: 2017 Divam Narula <dfordivam@gmail.com>
@@ -33,7 +33,7 @@ library
     , containers == 0.5.*
     , file-embed
     , bytestring
-    , frame-generator-common >= 0.1 && < 0.2
+    , frame-generator-common >= 1.0 && < 1.1
     , aeson
     , reflex-dom-contrib
     , uri-bytestring
