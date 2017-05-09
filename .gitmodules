@@ -7,3 +7,6 @@
 [submodule "frontend/reflex-dom-contrib"]
 	path = frontend/reflex-dom-contrib
 	url = git@github.com:reflex-frp/reflex-dom-contrib.git
+[submodule "reflex-platform"]
+	path = reflex-platform
+	url = git@github.com:reflex-frp/reflex-platform.git
