@@ -195,11 +195,11 @@ appWebSocketServer appSt = do
                 <$> (fromSqlKey <$> key)
           return $ msg
 
-        (Just (DeleteForeGround fgId)) -> do
-          mylift $ runDB $ delete (( toSqlKey fgId) :: Key ForeGroundDB)
+        (Just (DeleteForeGround fgIds)) -> do
+          mylift $ runDB $ forM fgIds (\i -> delete (( toSqlKey i) :: Key ForeGroundDB))
           return Nothing
 
-        (Just (DownloadForeGroundPng _)) -> return Nothing
+        (Just (DownloadForeGroundPng fgIds)) -> return Nothing
         Nothing -> return Nothing
 
 

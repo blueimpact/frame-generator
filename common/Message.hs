@@ -33,7 +33,7 @@ data Request =
     ForeGroundData
   | GetForeGroundList
   | EditForeGround FgId
-  | DeleteForeGround FgId
+  | DeleteForeGround [FgId]
   | DownloadForeGroundPng [FgId]
   deriving (Generic, Show)
 

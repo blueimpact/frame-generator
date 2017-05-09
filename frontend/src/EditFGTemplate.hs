@@ -172,7 +172,7 @@ miniPatternBrowser fullHost pats = do
                 return $ (AddLayer (groupName, file))
                   <$ domEvent Click e
           )
-  ev <- divClass C.editFgtWidgetPatternBrowse $ dyn $ sequence <$> ((map f) <$> pats)
+  ev <- divClass "pre-scrollable" $ dyn $ sequence <$> ((map f) <$> pats)
   let
     evFlattened = leftmost <$> (concat <$> ev)
 

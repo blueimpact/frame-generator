@@ -18,7 +18,8 @@ import qualified Data.Text                 as T
 import qualified Data.Text.Encoding        as T
 import Data.Monoid
 import Data.Maybe (isJust)
-import qualified Data.Set as S
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Aeson
 import Data.Maybe
 import Control.Monad
@@ -112,7 +113,7 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
     filtFun t (g,_) =
       if T.null t
         then True
-        else isJust (T.commonPrefixes t g)
+        else isJust (T.commonPrefixes (T.toLower t) (T.toLower g))
 
     -- Show Preview
     f (fgtId, pats, file) = do
@@ -153,20 +154,21 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
       => m (Dynamic t ([(Text,[Text])],[(Text,[Text])],[(Text,[Text])]))
     layerPatternGroupSelector = do
       divClass "row" $ el "table" $ el "tr" $ do
-        (grpSelDyn1 :: Dynamic t (Dynamic t [(Text,[Text])])) <- el "td" $ do
-          -- Group list, checkbox
-          text "Layer 1"
-          ti <- textInput def
-          widgetHold (return (constDyn [])) $ (\pats -> do
-            w <- checkboxList fst
-              filtFun
-              never
-              (value ti)
-              S.empty
-              pats
-            return $ value w) <$> patternList
+        (grpSelDyn1 :: Dynamic t (Dynamic t [(Text,[Text])]))
+          <- elClass "td" "pre-scrollable" $ do
+            -- Group list, checkbox
+            text "Layer 1"
+            ti <- textInput def
+            widgetHold (return (constDyn [])) $ (\pats -> do
+              w <- checkboxList fst
+                filtFun
+                never
+                (value ti)
+                Set.empty
+                pats
+              return $ value w) <$> patternList
 
-        grpSelDyn2 <- el "td" $ do
+        grpSelDyn2 <- elClass "td" "pre-scrollable" $ do
           -- Group list, checkbox
           text "Layer 2"
           ti <- textInput def
@@ -175,11 +177,11 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
               filtFun
               never
               (value ti)
-              S.empty
+              Set.empty
               pats
             return $ value w) <$> patternList
 
-        grpSelDyn3 <- el "td" $ do
+        grpSelDyn3 <- elClass "td" "pre-scrollable" $ do
           -- Group list, checkbox
           text "Layer 3"
           ti <- textInput def
@@ -188,7 +190,7 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
               filtFun
               never
               (value ti)
-              S.empty
+              Set.empty
               pats
             return $ value w) <$> patternList
         return $ zipDynWith (\a (b,c) -> (a,b,c)) (join grpSelDyn1)
@@ -223,7 +225,7 @@ previewWidget fullHost patternList fgtListDyn fgPreviewListEv = do
 
   return $ enc evClick
 
-foreGroundBrowseWidget ::
+foreGroundBrowseWidget :: forall t m .
   (MonadWidget t m)
   => Text
   -> Event t (Message.Response ForeGroundListT)
@@ -232,28 +234,69 @@ foreGroundBrowseWidget fullHost fgListEv = do
   let
     getList = (\(ForeGroundList lst) -> lst) <$> fgListEv
 
-    f :: (MonadWidget t m) => (FgId, Text) -> m (Event t Message.Request)
-    f (fgId, file) = do
+    f :: (MonadWidget t m) =>
+         Event t Bool
+      -> (FgId, Text)
+      -> m (Event t Message.Request, Event t (FgId,Bool))
+    f selEv (fgId, file) = do
       divClass "col-md-2" $ do
+        cb <- checkbox False $ def & setValue .~ selEv
+
         edit <- buttonE "Edit" $
           EditForeGround fgId
         delete <- buttonE "Delete" $
-          DeleteForeGround fgId
+          DeleteForeGround [fgId]
         -- Edit mask
         -- Download
         let url = "http://" <> fullHost
               <> file
         img url
 
-        return $ leftmost $
-          [edit, delete]
-  evDyn <- divClass "container" $ idTag "foreground_browser" $
+        return $ (leftmost [edit, delete],
+                  (\b -> (fgId,b)) <$> _checkbox_change cb)
+
+  ev <- divClass "container" $ idTag "foreground_browser" $
     divClass "panel panel-primary" $ do
       divClass "panel-heading" $ text "ForeGrounds"
+      (selEv, download, deleteSel) <- divClass "panel-body row" $ do
+
+        selectEv <- button "Select All"
+        selectDyn <- foldDyn (\_ b -> not b) (False) selectEv
+
+        download <- button "Download"
+        deleteSel <- button "Delete Selected"
+
+        let selEv = updated selectDyn
+        return (selEv, download, deleteSel)
+
       divClass "panel-body row" $ do
-        widgetHold (do {return [];})
-          (sequence <$> ((map f) <$> getList))
+        (sfalsjf :: Dynamic t ([(Event t Message.Request, Event t (FgId,Bool))]))
+          <- widgetHold (do {return [];})
+            (sequence <$> ((map (f selEv)) <$> getList))
 
-  let evClick = switchPromptlyDyn $ leftmost <$> evDyn
+        let evClick = switchPromptlyDyn $ leftmost <$> ((map fst) <$> sfalsjf)
+            evCBox :: Dynamic t (Event t (NonEmpty (FgId,Bool)))
+            evCBox = mergeList <$> ((map snd) <$> sfalsjf)
 
-  return $ enc evClick
+
+            setSel :: Dynamic t (m (Dynamic t (Set FgId)))
+            setSel = f <$> evCBox
+              where
+                f ev = foldDyn handler (Set.empty) ev
+                handler neList set = foldl g set neList
+                g set (fgId, sel) = if sel
+                                      then Set.insert fgId set
+                                      else Set.delete fgId set
+
+        setDyn' <- dyn setSel
+        setDyn'' <- holdDyn (constDyn Set.empty) setDyn'
+
+        let
+          setDyn :: Dynamic t (Set FgId)
+          setDyn = join setDyn''
+          setListDyn = Set.toList <$> setDyn
+          evDelete = DeleteForeGround <$> (tagPromptlyDyn setListDyn deleteSel)
+          evDownload = DownloadForeGroundPng <$> (tagPromptlyDyn setListDyn download)
+
+        return $ leftmost [evClick, evDelete, evDownload]
+  return $ enc ev
