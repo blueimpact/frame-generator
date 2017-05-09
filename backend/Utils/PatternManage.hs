@@ -2,6 +2,7 @@ module Utils.PatternManage where
 
 import Import
 import System.Directory
+import System.Process
 import System.FilePath.Posix
 import Diagrams.TwoD.Image
 import Diagrams.Backend.Rasterific
@@ -15,6 +16,7 @@ import qualified Data.List.NonEmpty as NE
 import System.Random
 
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Debug.Trace
 
 -- getPatternList :: IO (Response)
@@ -105,3 +107,40 @@ savePng names bs = do
       return fullFileName
   writeFile ("./" ++ fullFileName) bs
   return $ T.pack $ fullFileName
+
+getZipFile :: [Text] -> IO (Maybe Text)
+getZipFile files = do
+
+  rnd <- randomRIO (0,maxBound::Int)
+
+  let
+    archiveName = show rnd ++ ".zip"
+    archiveFullName = "/static/download/" ++ archiveName
+    -- Remove /static/foreground/ from file names
+    fs = map stripFN files
+    stripFN :: Text -> String
+    stripFN f' = f
+      where
+        f'' = T.unpack f' -- Path /static/foregrounds/dir/file.png
+        (_:_:_:fs) = splitPath f'' -- remove /static/foregrounds
+        f = System.FilePath.Posix.joinPath fs
+    fileList = "/tmp/" ++ show rnd ++ ".list"
+  T.writeFile fileList (T.pack (unlines fs))
+
+  (_,_,_,ph1) <- createProcess $
+    shell ("cd static/foregrounds; cat " ++ fileList
+           ++ "| zip -@ " ++ archiveName)
+
+  waitForProcess ph1
+  (_,_,_,ph2) <- createProcess $
+    shell ("mv static/foregrounds/" ++ archiveName ++ " static/download/")
+  waitForProcess ph2
+
+  archiveExist <- doesFileExist ("./" ++ archiveFullName)
+  print archiveFullName
+  print archiveExist
+  return $ if archiveExist
+              then Just (T.pack archiveFullName)
+              else Nothing
+
+  -- create zip and store zip in static

@@ -108,6 +108,7 @@ library
                  , filepath
                  , lens
                  , ghc-prim
+                 , process
                  , frame-generator-common      >= 0.1 && < 0.2
 
 executable         frame-generator-backend

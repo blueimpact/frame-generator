@@ -199,7 +199,16 @@ appWebSocketServer appSt = do
           mylift $ runDB $ forM fgIds (\i -> delete (( toSqlKey i) :: Key ForeGroundDB))
           return Nothing
 
-        (Just (DownloadForeGroundPng fgIds)) -> return Nothing
+        (Just (DownloadForeGroundPng fgIds)) ->do
+          files <- mylift $ runDB $ forM fgIds
+            (\i -> do
+              fg <- get (( toSqlKey i) :: Key ForeGroundDB)
+              return $ (\a b -> [a,b]) <$> (foreGroundDBPngPreview <$> fg)
+                <*> (foreGroundDBMaskFile <$> fg)
+            )
+          zipFile <- liftIO $ getZipFile (concat $ catMaybes files)
+          return $ DownloadForeGroundPngLinkT
+            <$> (DownloadForeGroundPngLink <$> zipFile)
         Nothing -> return Nothing
 
 

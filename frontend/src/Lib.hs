@@ -68,7 +68,7 @@ mainWidgetTop = do
     req2 <- editFGTemplateWidget fullHost patListDyn
       (getResponse ws) (getResponse ws)
 
-    req6 <- foreGroundBrowseWidget fullHost (getResponse ws)
+    req6 <- foreGroundBrowseWidget fullHost (getResponse ws) (getResponse ws)
     req7 <- previewWidget fullHost patternList fgtListDyn (getResponse ws)
 
     ws <- webSocket url $ def &

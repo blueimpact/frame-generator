@@ -229,8 +229,9 @@ foreGroundBrowseWidget :: forall t m .
   (MonadWidget t m)
   => Text
   -> Event t (Message.Response ForeGroundListT)
+  -> Event t (Message.Response DownloadForeGroundPngLinkT)
   -> m (Event t [ByteString])
-foreGroundBrowseWidget fullHost fgListEv = do
+foreGroundBrowseWidget fullHost fgListEv downloadLink = do
   let
     getList = (\(ForeGroundList lst) -> lst) <$> fgListEv
 
@@ -268,6 +269,12 @@ foreGroundBrowseWidget fullHost fgListEv = do
 
         let selEv = updated selectDyn
         return (selEv, download, deleteSel)
+
+      widgetHold blank
+        (ffor downloadLink
+          (\(DownloadForeGroundPngLink l) ->
+            divClass "panel-body row" $
+              elAttr "a" ("href" =: l) $ text "Download zip"))
 
       divClass "panel-body row" $ do
         (sfalsjf :: Dynamic t ([(Event t Message.Request, Event t (FgId,Bool))]))
