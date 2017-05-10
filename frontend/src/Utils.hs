@@ -44,7 +44,8 @@ createObjectURL bs = do
       ba <- extractByteArray cStr $ BS.length payload
       let opt :: Maybe JS.BlobPropertyBag
           opt = Nothing
-      b <- Blob.newBlob' [ba] opt
+          baBlob = (JS.pFromJSVal ba) :: JS.Blob
+      b <- Blob.newBlob [baBlob] opt
       f b
   url <- run createObjectURL_ bs
   return $ T.pack $ JS.fromJSString $ JS.pFromJSVal url
