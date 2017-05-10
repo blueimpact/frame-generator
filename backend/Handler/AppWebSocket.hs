@@ -219,14 +219,15 @@ getAllPermutations ::
   -> NonEmpty (NonEmpty (Text,Text))
 -- Get all permutations for given number of layers from the groups
 getAllPermutations l1 l2 l3 =
-  case (l2,l3) of
+  case (l2, l3) of
     (Just y, Just z) -> threeLayers l1List (NE.toList y) (NE.toList z)
     (Just y, Nothing) -> twoLayers l1List (NE.toList y)
     _ -> NE.fromList $ map (\x -> NE.fromList [x]) l1List
   where
     l1List = NE.toList l1
-    threeLayers xl yl zl = NE.fromList ([(NE.fromList [x,y,z]) | x <- xl, y <- yl, z <- zl])
-    twoLayers xl yl = NE.fromList ([(NE.fromList [x,y]) | x <- xl, y <- yl])
+    threeLayers xl yl zl =
+      NE.fromList ([(NE.fromList [x, y, z]) | x <- xl, y <- yl, z <- zl])
+    twoLayers xl yl = NE.fromList ([(NE.fromList [x, y]) | x <- xl, y <- yl])
 
 makeFGAndSave ::
      FgtId

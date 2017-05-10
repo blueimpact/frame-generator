@@ -15,8 +15,8 @@ import Control.Monad
 
 import Common
 
-data Request =
-    GetPatternList
+data Request
+  = GetPatternList
   | GetForeGroundTemplateList
   | CreateForeGroundTemplate PatternName
   | EditForeGroundTemplate FgtId
@@ -24,13 +24,12 @@ data Request =
   | DeleteForeGroundTemplate FgtId
   | DefaultPreview FgtId
   | PreviewForeGroundTemplate FgtId
-    (NonEmpty PatternName)
-    (Maybe (NonEmpty PatternName))
-    (Maybe (NonEmpty PatternName))
+                              (NonEmpty PatternName)
+                              (Maybe (NonEmpty PatternName))
+                              (Maybe (NonEmpty PatternName))
   | ApplyForeGroundTemplate FgtId
-    (NonEmpty PatternName)
-  | SaveForeGround
-    ForeGroundData
+                            (NonEmpty PatternName)
+  | SaveForeGround ForeGroundData
   | GetForeGroundList
   | EditForeGround FgId
   | DeleteForeGround [FgId]
@@ -142,8 +141,9 @@ instance GetResponse DownloadForeGroundPngLinkT where
 
 -- Client side requests
 -- Edit ForeGround, Client Request Data
-data EditFGTemplate =
-    Edit LayerId ForeGroundParams
+data EditFGTemplate
+  = Edit LayerId
+         ForeGroundParams
   | AddLayer PatternName
   | DeleteLayer LayerId
   | EditMask MaskParams
@@ -151,8 +151,8 @@ data EditFGTemplate =
   | SaveMask
   deriving (Generic, Show)
 
-data EditPane =
-    GetFGDefaultParams
+data EditPane
+  = GetFGDefaultParams
   | GetMaskDefaultParams
   deriving (Generic, Show)
 
