@@ -4,46 +4,36 @@
 module Handler.Home where
 
 import Import
-import AppData
-
-import qualified Data.Map as Map
-import System.Random
+import Common
+import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Conduit.List
-
-import Utils.FrameCreator
-import Utils.Misc
-
--- Spec
--- Upload the user given pattern and do error checking
--- If pattern is ok then give a link to the pattern id
--- Store the pattern in memory App
-
-data UploadPatternForm = UploadPatternForm
-  FileInfo ForeGroundTemplate
-
-patternForm = renderDivs $ UploadPatternForm
-  <$> areq fileField "Pattern File " Nothing
-  <*> areq (radioField optionsEnum) "Template"
-        (Just Horizontal)
+import System.Directory
 
 getHomeR :: Handler Html
-getHomeR = do
-    defaultLayout [whamlet|
-      <h1>Welcome!
-      <p>
-        First upload a pattern to create a ForeGround, next upload an image
-        and select a frame to apply around it.
-        No files are currently stored on this server, so please download all the final images.
-      <p>
-        <a href=@{UploadPatternR} target=_blank>Upload Pattern
-        Images with only alpha layers work well!
-        After successful upload you will be redirected to the editing page.
+getHomeR = redirect (StaticR editapp_index_html)
 
-      <p>
-        <a href=@{UploadBackgroundImageR}>Upload Image
-        This can be anything, it will be cropped as a square and centered.
-|]
+-- Upload form
+data UploadPatternForm = UploadPatternForm
+  Text
+  FileInfo
+  (Maybe FileInfo)
+  (Maybe FileInfo)
+  (Maybe FileInfo)
+  (Maybe FileInfo)
+  (Maybe FileInfo)
+  (Maybe FileInfo)
+  (Maybe FileInfo)
+
+patternForm = renderDivs $ UploadPatternForm
+  <$> areq textField "Group Name" Nothing
+  <*> areq fileField "Pattern File 1" Nothing
+  <*> aopt fileField "Pattern File 2" Nothing
+  <*> aopt fileField "Pattern File 3" Nothing
+  <*> aopt fileField "Pattern File 4" Nothing
+  <*> aopt fileField "Pattern File 5" Nothing
+  <*> aopt fileField "Pattern File 6" Nothing
+  <*> aopt fileField "Pattern File 7" Nothing
+  <*> aopt fileField "Pattern File 8" Nothing
 
 getUploadPatternR :: Handler Html
 getUploadPatternR = do
@@ -60,91 +50,28 @@ postUploadPatternR = do
   ((result, widget), enctype) <- runFormPost patternForm
   $logDebug "Trying to read uploaded pattern"
 
-  fd <- case result of
-    FormSuccess (UploadPatternForm f t) -> do
-      -- Get all file data
-      d <- runConduit
-        ((fileSource f) =$= (Data.Conduit.List.fold (<>) ""))
+  case result of
+    FormSuccess (UploadPatternForm g f1 f2 f3 f4 f5 f6 f7 f8) -> do
+      let
+          doFile f = do
+            (fileMove f) (dir ++ "/" ++ (T.unpack (fileName f)))
 
-      return $ Just (d,t)
-    _ -> return Nothing
+          dir = T.unpack $ "./" <> patternsDir <> "/" <> g
 
-  let patData = join $ parsePatternData <$> fd
+          saveFiles = do
+            createDirectoryIfMissing True dir
+            doFile f1
+            mapM doFile f2
+            mapM doFile f3
+            mapM doFile f4
+            mapM doFile f5
+            mapM doFile f6
+            mapM doFile f7
+            mapM doFile f8
 
-  case fd of
-    Nothing -> $logError $ "Could not read input pattern"
-    Just _ -> return ()
+      liftIO saveFiles
 
-  case patData of
-    Nothing -> do
-      $logError $ "Could not parse pattern"
       redirect HomeR
-      -- Set message and return to home
-
-    Just pd -> do -- Store pd and go to preview
-      $logInfo $ "Parse succesful"
-
-      appSt <- appData <$> getYesod
-
-      patID <- liftIO $ addToMVarMap (patternDB appSt) PatternID pd
-
-      redirect $ MakeForeGroundR patID
-
-data UploadBackgroundImageForm = UploadBackgroundImageForm FileInfo
-
-bgImageForm = renderDivs $ UploadBackgroundImageForm
-  <$> areq fileField "Background Image" Nothing
-
-getUploadBackgroundImageR :: Handler Html
-getUploadBackgroundImageR = do
-    ((_, widget), enctype) <- runFormPost bgImageForm
-    defaultLayout [whamlet|
-      <form method=post enctype=#{enctype}>
-        ^{widget}
-        <p>
-        <input type=submit>
-|]
-
-postUploadBackgroundImageR :: Handler Html
-postUploadBackgroundImageR = do
-  ((result, widget), enctype) <- runFormPost bgImageForm
-  $logDebug "Trying to read uploaded image"
-
-  fd <- case result of
-    FormSuccess (UploadBackgroundImageForm f) -> do
-      -- Get all file data
-      d <- runConduit
-        ((fileSource f) =$= (Data.Conduit.List.fold (<>) ""))
-
-      return $ Just d
-    _ -> return Nothing
-
-  let imgData = join $ parseBackgroundImageData <$> fd
-
-  case fd of
-    Nothing -> $logError $ "Could not read input image"
-    Just _ -> return ()
-
-  case imgData of
-    Nothing -> do
-      $logError $ "Could not parse file"
+    _ -> do
+      $logError "Error in upload pattern"
       redirect HomeR
-      -- Set message and return to home
-
-    Just img -> do -- Store pd and go to preview
-      $logInfo $ "Parse succesful"
-
-      appSt <- appData <$> getYesod
-
-      imgID <- liftIO $ addToMVarMap (imageDB appSt)
-       BackgroundImageID img
-      redirect $ PreviewBackgroundImageR imgID
-
-getPatternsListR :: Handler Html
-getPatternsListR = getHomeR
-
-getBackgroundImageListR :: Handler Html
-getBackgroundImageListR = getHomeR
-
-postEditMaskR :: ForeGroundID -> Handler Html
-postEditMaskR _ = undefined

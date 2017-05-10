@@ -1,53 +1,67 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- Common code between front-end and back-end
 module Common where
 
 import GHC.Generics
 import Data.Aeson
+import Data.Text (Text)
+import Data.List.NonEmpty (NonEmpty)
+import Data.Int
+import Data.Default
 
--- Client side requests
--- Edit ForeGround, Client Request Data
-data ClientReqEditFG =
-    ClientReqEditFG ForeGroundParams
-  | ClientReqEditMask MaskParams
-  | ClientReqSaveFG
-  | ClientReqSaveMask
-  deriving (Generic, Show)
-
-instance ToJSON ClientReqEditFG where
-    -- No need to provide a toJSON implementation.
-
-    -- For efficiency, we write a simple toEncoding implementation, as
-    -- the default version uses toJSON.
-    toEncoding = genericToEncoding defaultOptions
-
-instance FromJSON ClientReqEditFG
-    -- No need to provide a parseJSON implementation.
-
-data ClientReqEditPane =
-    GetFGDefaultParams
-  | GetMaskDefaultParams
-  deriving (Generic, Show)
-
-instance ToJSON ClientReqEditPane where
-    toEncoding = genericToEncoding defaultOptions
-instance FromJSON ClientReqEditPane
 -- Common data
+
+type PatternName = (Text, Text)
+type FileName = Text
+type FgtId = Int64
+type FgId = Int64
+type LayerId = Int
+
+data PatternShape = Horizontal | Vertical | Diagnol
+data ForeGroundData = ForeGroundData
+  (NonEmpty (PatternName, ForeGroundParams))
+  deriving (Generic, Show)
 
 data ForeGroundParams = ForeGroundParams {
     patternCount    :: Int
   , rotationOffset  :: Double -- Deg
   , scaling         :: Double -- 1.0 - default
   , radiusOffset    :: Double -- %
+  , angleOffset     :: Double -- -0.5 to 0.5
 }
   deriving (Generic, Show, Eq)
+
+instance Default ForeGroundParams where
+  def = ForeGroundParams 8 0 1.0 100 0
 
 data MaskParams = MaskParams {
     dilateValue     :: Int
   , blurValue       :: Int
 }
   deriving (Generic, Show, Eq)
+
+instance Default MaskParams where
+  def = MaskParams 4 4
+
+-- Values
+fgtemplatesDir :: Text
+fgtemplatesDir = "/static/fgtemplates/"
+
+patternsDir :: Text
+patternsDir = "/static/patterns/"
+
+foregroundDir :: Text
+foregroundDir = "/static/foregrounds/"
+
+previewDir :: Text
+previewDir = "/static/preview/"
+
+instance ToJSON ForeGroundData where
+    toEncoding = genericToEncoding defaultOptions
+
+instance FromJSON ForeGroundData
 
 instance ToJSON ForeGroundParams where
     toEncoding = genericToEncoding defaultOptions
@@ -57,4 +71,4 @@ instance FromJSON ForeGroundParams
 instance ToJSON MaskParams where
     toEncoding = genericToEncoding defaultOptions
 
-instance FromJSON MaskParams 
+instance FromJSON MaskParams

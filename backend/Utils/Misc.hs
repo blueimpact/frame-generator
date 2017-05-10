@@ -10,6 +10,8 @@ import Text.Read (readMaybe)
 import qualified Data.Text as T
 import Data.Text (Text)
 import Data.Maybe (fromMaybe)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NE
 
 -- Add the value to a random key and returns the key
 addToMVarMap :: (Ord k) =>
@@ -36,3 +38,4 @@ getParamFromMaybe :: (Read a) => a -> Maybe Text -> a
 getParamFromMaybe a b = fromMaybe a
   (join $ fmap (\t -> readMaybe $ T.unpack t) b)
 
+appendNE ne e = NE.fromList $ (NE.toList ne) ++ [e]

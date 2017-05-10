@@ -1,57 +1,51 @@
-Frame Generator
+# Frame Generator
 
-Create a circular frame from a pattern and use this frame to create a nice
-framed image.
+## Create beautiful frames using patterns with this app
 
 Features
-1. Create a circular frame from a user specified pattern image
-  The use can edit the appearance of this frame by altering these parameters
+1. Interactice editing of Frame foreground
 
-    a. Number of patterns
+  The user can edit the appearance of this frame by altering these parameters
 
-    b. Scaling of patterns.
+    a. Number of patterns in a layer
 
-    c. Rotation
+    b. Scaling
 
-2. Once the frame is ready the user can put this frame around an image.
-  The image will be nicely cut around the edges so as to fit the frame.
-  User can edit the cut related parameters by modifying the mask used for
-  cutting.
+    c. Rotation - Rotate individual pattern
 
-    The following parameters can be used modified for mask
+    d. Radius
 
-    a. Dilate - This alters the spacing between frame and image.
+    e. Angle - Adjust the position of pattern in circle
 
-    b. Blur - This adds a blurred transparency at the cut to make it smooth.
+2. Preview Widget
 
-Usage
-1. Upload the pattern
-2. Edit the frame
-3. Upload the back ground image
-4. Select a frame to create a framed image.
+   This can automatically create a set of frame foregrounds from a given template and group of patterns.
 
-Installation from source
+   This is useful in exploring all the frames in an instant!
 
-1. Frontend
+3. ForeGround widget
 
-First create the nix-shell
+   This will create the foreground, along with the custom mask which can be used to create the full frame around an image.
 
+For more details have a look at the [wiki](https://github.com/blueimpact/frame-generator/wiki)
+
+## Installation
+
+### Compiling
+
+You need `stack` and `nix` installed on the system. The `Makefile` should be sufficient to build both frontend and backend.
 ```
-git clone https://github.com/reflex-frp/reflex-platform.git;
-./reflex-platform/workon ghcjs ./frontend
+> make
 ```
 
-Then
+If you face any problem please report an issue.
+
+### Setting up server
+
+You need `zip` to be installed on the server for packaging the pngs in a zip archive.
 
 ```
-cd frontend; cabal configure --ghcjs && cabal build;
+> cd backend; stack exec frame-generator-backend
 ```
 
-2. Backend
-
-```
-cd backend;
-./cp.sh; # Copy Front-end js files
-stack build;
-stack exec frame-generator-backend;
-```
+Open localhost:3000 to start the app.

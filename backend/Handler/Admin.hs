@@ -14,12 +14,4 @@ getAdminR = do
 
 getAdminResetR :: Handler Html
 getAdminResetR = do
-  appSt <- appData <$> getYesod
-
-  liftIO $ do
-    swapMVar (patternDB appSt) Map.empty
-    swapMVar (foreGroundDB appSt) Map.empty
-    swapMVar (pngDB appSt) Map.empty
-    swapMVar (imageDB appSt) Map.empty
-  
   redirect HomeR

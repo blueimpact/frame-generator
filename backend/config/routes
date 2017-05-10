@@ -4,26 +4,11 @@
 
 /              HomeR GET
 
-/pattern/list                   PatternsListR GET
-/pattern/upload                 UploadPatternR GET POST
-/pattern/id/#PatternID          PreviewPatternR GET
+/uploadpatterns                 UploadPatternR GET POST
 
-/image/list                     BackgroundImageListR GET
-/image/upload                   UploadBackgroundImageR GET POST
-/image/id/#BackgroundImageID    PreviewBackgroundImageR GET
-
-/create/foreground/#PatternID   MakeForeGroundR GET
-/edit/foreground/#ForeGroundID  EditForeGroundR GET
-
-/create/mask/#ForeGroundID      CreateMaskR GET
-/edit/mask/#ForeGroundID        EditMaskR GET POST
-
-/editpane/#ForeGroundID         EditPaneR GET
-
-/create/frame/#ForeGroundID/#BackgroundImageID CreateFrameR GET
+/edit/foreground/#ForeGroundTemplateDBId  EditForeGroundR GET
 
 /admin                          AdminR GET
 /admin/reset                    AdminResetR GET
 
--- Host all output images on this route
-/getpng/#PngID                  PngR GET
+/websocket                      AppWebSocket GET

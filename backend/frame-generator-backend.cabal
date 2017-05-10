@@ -1,5 +1,5 @@
 name:              frame-generator-backend
-version:           0.1.0
+version:           1.0.0
 cabal-version:     >= 1.8
 build-type:        Simple
 
@@ -14,19 +14,20 @@ Flag library-only
 library
     hs-source-dirs: ., app
     exposed-modules: Application
+                     AppData
                      Foundation
                      Import
                      Import.NoFoundation
                      Model
                      Settings
                      Settings.StaticFiles
-                     AppData
-                     Handler.Home
-                     Handler.Frame
-                     Handler.EditFrame
                      Handler.Admin
+                     Handler.Home
+                     Handler.AppWebSocket
+                     Handler.EditFGTemplate
                      Utils.FrameCreator
                      Utils.Misc
+                     Utils.PatternManage
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -104,7 +105,11 @@ library
                  , friday-juicypixels
                  , path-pieces
                  , yesod-websockets
-                 , frame-generator-common      >= 0.1 && < 0.2
+                 , filepath
+                 , lens
+                 , ghc-prim
+                 , process
+                 , frame-generator-common      >= 1.0 && < 1.1
 
 executable         frame-generator-backend
     if flag(library-only)

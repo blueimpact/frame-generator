@@ -33,9 +33,9 @@ import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Home
-import Handler.Frame
-import Handler.EditFrame
 import Handler.Admin
+import Handler.AppWebSocket
+import Handler.EditFGTemplate
 
 import AppData
 import qualified Data.Map as Map
@@ -58,11 +58,8 @@ makeFoundation appSettings = do
     appStatic <-
         (if appMutableStatic appSettings then staticDevel else static)
         (appStaticDir appSettings)
-    appData <- AppData <$> newMVar (Map.empty)
-      <*> newMVar (Map.empty)
-      <*> newMVar (Map.empty)
-      <*> newMVar (Map.empty)
 
+    let appData = AppData
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
     -- logging function. To get out of this loop, we initially create a
