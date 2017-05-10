@@ -72,8 +72,6 @@ foreGroundTemplateBrowseWidget fullHost fgTListEv = do
 
     f fgtId = do
       divClass "col-md-2" $ do
-        preview <- buttonE "Preview" $
-          DefaultPreview fgtId
         edit <- buttonE "Edit" $
           EditForeGroundTemplate fgtId
         clone <- buttonE "Clone" $
@@ -85,7 +83,7 @@ foreGroundTemplateBrowseWidget fullHost fgTListEv = do
         imgJump (Nothing) url
 
         return $ leftmost $
-          [preview, edit, clone, delete]
+          [edit, clone, delete]
 
   evDyn <- divClass "container" $ idTag "template_browser" $
     divClass "panel panel-primary" $ do
@@ -254,7 +252,7 @@ foreGroundBrowseWidget fullHost fgListEv downloadLink = do
         img url
 
         return $ (leftmost [edit, delete],
-                  (\b -> (fgId,b)) <$> _checkbox_change cb)
+                  (\b -> (fgId,b)) <$> (updated $ _checkbox_value cb))
 
   ev <- divClass "container" $ idTag "foreground_browser" $
     divClass "panel panel-primary" $ do
