@@ -81,24 +81,20 @@ renderEditWidget fullHost pats
   (fgtId, (ForeGroundData fgtData)) = do
   rec
     let
-        t = 0.2
         idTxt = tshow fgtId
         ev2 = SaveFG <$ save
         editFGTEv = EditForeGroundTemplate fgtId <$
           (leftmost [reset])
-        -- eventMessage = (enc $ leftmost [ev1,ev2])
+        eventMessage = (enc $ leftmost [ev1,ev2, ToggleZoom <$ zoom])
     ws <- webSocket ("ws://" <> fullHost <> "/edit/foreground/" <> idTxt) $
       def & webSocketConfig_send .~ eventMessage
-
-    eventMessage <- debounce t (enc $ leftmost [ev1,ev2])
 
     -- Controls
     (ev1,fgtDataDyn) <- elClass "table" "table" $
       elClass "tr" "" $ do
         rec
           let lDyn = NE.toList <$> ((NE.zip (NE.fromList [1..])) <$> (uniqDyn fgtDataDynLight))
-              ev = leftmost $ [addLayerMsg, ev2]
-              ev2 = switchPromptlyDyn $ leftmost <$> editMsgs
+              ev = leftmost $ [addLayerMsg, editMsg]
 
               handler (AddLayer pat) (d,_) = Just (dNew,dNew)
                 where
@@ -127,6 +123,8 @@ renderEditWidget fullHost pats
           fgtDataDynTuple <- foldDynMaybe handler (fgtData,fgtData) ev
 
           editMsgs <- simpleList lDyn lc
+          let editMsg' = switchPromptlyDyn $ leftmost <$> editMsgs
+          editMsg <- debounce 0.5 editMsg'
           -- Select pattern and add a layer
           addLayerMsg <- miniPatternBrowser fullHost pats
 
@@ -147,6 +145,7 @@ renderEditWidget fullHost pats
     -- Race in save signal, both WS fire
     save <- button "Save"
     saveAsFG <- button "Save as ForeGround"
+    zoom <- button "Zoom"
 
     let saveFGEv = SaveForeGround <$> ForeGroundData <$> (tagDyn fgtDataDyn saveAsFG)
 

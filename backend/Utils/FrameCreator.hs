@@ -24,10 +24,12 @@ import Vision.Image.JuicyPixels
 import Vision.Image.Filter (dilate, blur)
 import Vision.Image.Conversion
 import Vision.Image.Grey
+import Vision.Image.RGBA.Type
 import Vision.Image.Mutable
 import Vision.Image.Type
 import qualified Vision.Image.Class as V
 import Vision.Primitive.Shape (ix2)
+import Vision.Primitive (Rect(..))
 import Vision.Image.Transform
 import Control.Monad.ST.Safe
 
@@ -41,6 +43,19 @@ encodeToPng dia width = BSL.toStrict $
 encodeToPngLazy :: Diagram Rasterific -> Int -> BSL.ByteString
 encodeToPngLazy dia width =
   encodePng $ render dia width
+
+encodeToPngWithAA :: Diagram Rasterific -> Int -> BSL.ByteString
+encodeToPngWithAA dia width =
+  encodePng $ resized
+  where
+    img = render dia (width*2)
+    resized :: JP.Image JP.PixelRGBA8
+    resized = toJuicyRGBA $ (f (toFridayRGBA img))
+
+    f inpImg = resize Bilinear (ix2 width width) inpImg
+      -- where
+      --   cropped :: RGBA
+      --   cropped = crop (Rect 0 0 (width*2) (width*2)) inpImg
 
 
 -- Depend on the template
@@ -194,19 +209,24 @@ renderSquareImage diaImg width = squareImage
 --           ((fromIntegral i)* (fromIntegral m))/255
 --         else f
 
-getForeGround ::
-     NonEmpty (Diagram Rasterific)
+getForeGround = getForeGround' False
+getQuarterForeGround = getForeGround' True
+
+getForeGround' ::
+     Bool
+  -> NonEmpty (Diagram Rasterific)
   -> NonEmpty ForeGroundParams
   -> Diagram Rasterific
-getForeGround
-  imgs layers
-  = mconcat $ NE.toList $ NE.zipWith getForeGroundLayer imgs layers
+getForeGround'
+  quarterImage imgs layers
+  = mconcat $ NE.toList $ NE.zipWith (getForeGroundLayer quarterImage) imgs layers
 
 getForeGroundLayer ::
-     Diagram Rasterific
+     Bool
+  -> Diagram Rasterific
   -> ForeGroundParams
   -> Diagram Rasterific
-getForeGroundLayer img
+getForeGroundLayer quarterImage img
   (ForeGroundParams num rotOffset scaling radiusOffset angleOffset)
   = mconcat $ map snd finalList
   where
@@ -218,7 +238,9 @@ getForeGroundLayer img
         Diagnol -> -45
 
     radius = getDefaultRadius num tmplt img
-    finalList = transList
+    finalList = if quarterImage
+                   then take (floor ((fromIntegral num) /4)) transList
+                   else transList
 
     scaledImg = scale scaling img
 

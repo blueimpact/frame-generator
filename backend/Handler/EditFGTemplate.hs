@@ -49,9 +49,10 @@ webSocketServer fgtID fgtData' dias' = do
   fgtDataRef <- liftIO $ newIORef fgtData'
   diasRef <- liftIO $ newIORef dias'
   imgDataRef <- liftIO $ newIORef ""
+  isZoom <- liftIO $ newIORef False
 
   sourceWS $$ Data.Conduit.List.mapMaybeM
-    (handleRequest fgtDataRef diasRef imgDataRef)
+    (handleRequest fgtDataRef diasRef imgDataRef isZoom)
     =$= sinkWSBinary
   where
     mylift :: Handler a -> ReaderT r (HandlerT App IO) a
@@ -60,22 +61,26 @@ webSocketServer fgtID fgtData' dias' = do
          IORef (NonEmpty (PatternName, ForeGroundParams))
       -> IORef (NonEmpty (Diagram Rasterific))
       -> IORef (BSL.ByteString)
+      -> IORef (Bool)
       -> BSL.ByteString
       -> ReaderT r (HandlerT App IO) (Maybe BSL.ByteString)
-    handleRequest fgtDataRef diasRef imgDataRef req' = do
+    handleRequest fgtDataRef diasRef imgDataRef isZoom req' = do
       $logInfo $ T.pack $ "Doing Edit" ++ show req'
       case decode req' of
         Just (Edit layerId params) -> do
           d <- liftIO $ readIORef fgtDataRef
           dias <- liftIO $ readIORef diasRef
+          z <- liftIO $ readIORef isZoom
           -- Better method?
           let newD = Control.Lens.imap
                 (\i a@(p,_) -> if (i + 1) == layerId
                   then (p,params)
                   else a) d
 
-              resDia = getForeGround dias (NE.map snd newD)
-              resImg = encodeToPngLazy resDia 600
+              resDia = fgDrawFun dias (NE.map snd newD)
+              resImg = renderFun resDia 600
+              renderFun = if z then encodeToPngWithAA else encodeToPngLazy
+              fgDrawFun = if z then getQuarterForeGround else getForeGround
 
           liftIO $ writeIORef imgDataRef resImg
           liftIO $ writeIORef fgtDataRef newD
@@ -130,6 +135,19 @@ webSocketServer fgtID fgtData' dias' = do
           liftIO $ savePng (Just (fgtemplatesDir, tshow (fromSqlKey fgtID))) $
             BSL.toStrict imgData
           return Nothing
+
+        Just ToggleZoom -> do
+          modifyIORef isZoom not
+          d <- liftIO $ readIORef fgtDataRef
+          dias <- liftIO $ readIORef diasRef
+          z <- liftIO $ readIORef isZoom
+          let
+              resDia = fgDrawFun dias (NE.map snd d)
+              resImg = renderFun resDia 600
+              renderFun = if z then encodeToPngWithAA else encodeToPngLazy
+              fgDrawFun = if z then getQuarterForeGround else getForeGround
+
+          return (Just resImg)
 
         _ -> return Nothing
 

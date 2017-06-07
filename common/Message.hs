@@ -147,13 +147,9 @@ data EditFGTemplate
   | AddLayer PatternName
   | DeleteLayer LayerId
   | EditMask MaskParams
+  | ToggleZoom
   | SaveFG
   | SaveMask
-  deriving (Generic, Show)
-
-data EditPane
-  = GetFGDefaultParams
-  | GetMaskDefaultParams
   deriving (Generic, Show)
 
 instance ToJSON Request where
@@ -205,10 +201,6 @@ instance ToJSON (Response DownloadForeGroundPngLinkT) where
     toEncoding = genericToEncoding defaultOptions
 
 instance FromJSON (Response DownloadForeGroundPngLinkT)
-
-instance ToJSON EditPane where
-    toEncoding = genericToEncoding defaultOptions
-instance FromJSON EditPane
 
 instance ToJSON EditFGTemplate where
     -- No need to provide a toJSON implementation.
