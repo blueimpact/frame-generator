@@ -238,7 +238,7 @@ makeFGAndSave fgtId pats l = do
   dias <- getPatternsDiaScaled pats
 
   let resDia = getForeGround <$> dias <*> pure l
-      resImg = encodeToPng <$> resDia <*> pure 600
+      resImg = BSL.toStrict <$> (encodeToPngWithAA <$> resDia <*> pure 600)
       m = getMask 600 def
         <$> resDia
       grps = map fst pats
