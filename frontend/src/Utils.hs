@@ -87,22 +87,51 @@ rangeInputWidgetWithTextEditAndReset
     resetValDyn <- holdDyn initVal
       (tagPromptlyDyn (_rangeInput_value ri) resetUpd)
 
-    (e,r) <- el "tr" $ do
+    (e,r,d,i) <- el "tr" $ do
       el "table" $ do
         el "td" $ text label
         evValChange <- el "td" $
           editInPlace (constant True) val
         resetEv <- el "td" $
           button "Reset"
-        return (evValChange, resetEv)
+        decreaseEv <- el "td" $ button "<"
+        increaseEv <- el "td" $ button ">"
+        return (evValChange, resetEv, decreaseEv, increaseEv)
 
-    ri <- el "tr" $ rangeInput $
-      RangeInputConfig initVal setValEv
-        (constDyn $ ("min" =: tshow min) <> ("max" =: tshow max)
-          <> ("step" =: tshow step))
+    ri <- el "tr" $ rangeInputWithDecAndInc label initVal' (min,max,step) setValEv i d
+
 
   return ri
 
+rangeInputWithDecAndInc ::
+  (MonadWidget t m)
+  => Text                   -- Label
+  -> Double                 -- Initial value
+  -> (Float, Float, Float)  --
+  -> Event t Float
+  -> Event t ()             -- Increment
+  -> Event t ()             -- Decrement
+  -> m (RangeInput t)
+rangeInputWithDecAndInc
+  label initVal' (min, max, step) setValEv inc dec = do
+
+  rec
+    let
+      initVal = realToFrac initVal'
+      i = Left True <$ inc
+      d = Left False <$ dec
+      r = Right <$> setValEv
+      s = Right <$> (_rangeInput_input ri)
+      inpEv = leftmost [i,d,r,s]
+      h (Left True) v = v + step
+      h (Left False) v = v - step
+      h (Right v) _ = v
+    val <- foldDyn h initVal inpEv
+    ri <- el "tr" $ rangeInput $
+      RangeInputConfig initVal (updated (uniqDyn val))
+        (constDyn $ ("min" =: tshow min) <> ("max" =: tshow max)
+          <> ("step" =: tshow step))
+  return ri
 idTag t = elAttr "div" (("id" =: t) <> ("style" =: "padding-top: 70px"))
 
 data PaginationEvents =
