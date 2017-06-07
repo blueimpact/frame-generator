@@ -22,6 +22,8 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 
+import Foreign.JavaScript.Utils (bsFromMutableArrayBuffer, bsToArrayBuffer)
+import Reflex.Dom.Contrib.Utils
 import Reflex.Dom.Contrib.Utils
 import Reflex.Dom.Contrib.Widgets.EditInPlace
 import Data.Aeson
@@ -38,16 +40,15 @@ enc mes = (:[]) <$> BSL.toStrict <$> encode <$> mes
 createObjectURL :: ByteString -> IO Text
 createObjectURL bs = do
   let
-    run f payload = BS.useAsCString payload $ \cStr -> do
+    run f = do
+      ba <- bsToArrayBuffer bs
       -- Defined in Reflex.Dom
       --foreign import javascript unsafe "new Uint8Array($1_1.buf, $1_2, $2)" extractByteArray :: Ptr CChar -> Int -> IO JS.JSVal
-      ba <- extractByteArray cStr $ BS.length payload
       let opt :: Maybe JS.BlobPropertyBag
           opt = Nothing
-          baBlob = (JS.pFromJSVal ba) :: JS.Blob
-      b <- Blob.newBlob [baBlob] opt
+      b <- Blob.newBlob [ba] opt
       f b
-  url <- run createObjectURL_ bs
+  url <- run createObjectURL_
   return $ T.pack $ JS.fromJSString $ JS.pFromJSVal url
 
 buttonE txt c = do

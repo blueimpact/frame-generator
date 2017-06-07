@@ -30,6 +30,7 @@ library
     , ghcjs-dom
     , reflex
     , reflex-dom
+    , reflex-dom-core
     , containers == 0.5.*
     , file-embed
     , bytestring

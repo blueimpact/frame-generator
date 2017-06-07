@@ -80,15 +80,17 @@ renderEditWidget ::
 renderEditWidget fullHost pats
   (fgtId, (ForeGroundData fgtData)) = do
   rec
-    let eventMessage = enc $ leftmost [ev1,ev2]
-
+    let
+        t = 0.2
         idTxt = tshow fgtId
         ev2 = SaveFG <$ save
         editFGTEv = EditForeGroundTemplate fgtId <$
           (leftmost [reset])
+        -- eventMessage = (enc $ leftmost [ev1,ev2])
     ws <- webSocket ("ws://" <> fullHost <> "/edit/foreground/" <> idTxt) $
       def & webSocketConfig_send .~ eventMessage
 
+    eventMessage <- debounce t (enc $ leftmost [ev1,ev2])
 
     -- Controls
     (ev1,fgtDataDyn) <- elClass "table" "table" $
