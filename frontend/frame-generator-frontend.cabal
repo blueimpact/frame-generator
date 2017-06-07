@@ -1,5 +1,5 @@
 name: frame-generator-frontend
-version: 1.0.0
+version: 1.1.0
 cabal-version: >=1.10
 build-type: Simple
 copyright: 2017 Divam Narula <dfordivam@gmail.com>
@@ -30,10 +30,11 @@ library
     , ghcjs-dom
     , reflex
     , reflex-dom
+    , reflex-dom-core
     , containers == 0.5.*
     , file-embed
     , bytestring
-    , frame-generator-common >= 1.0 && < 1.1
+    , frame-generator-common >= 1.1 && < 1.2
     , aeson
     , reflex-dom-contrib
     , uri-bytestring
