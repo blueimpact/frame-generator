@@ -36,7 +36,7 @@ let f = { mkDerivation, base, bytestring, containers, file-embed
 }:
 mkDerivation {
   pname = "frame-generator-frontend";
-  version = "0.1.0";
+  version = "1.1.0";
   src = ./.;
   isLibrary = true;
   isExecutable = true;
